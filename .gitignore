@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Environment
+.env
+.env.local
+
+# Google Credentials
+config/gsc_credentials.json
+config/*.json
+!config/.gitkeep
+
+# Reports (optional - 리포트를 git에 포함하려면 이 줄 삭제)
+reports/
+!reports/.gitkeep
+
+# Logs
+logs/*.log
+*.log
+
+# Level 2 Agent backups
+.agent_backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

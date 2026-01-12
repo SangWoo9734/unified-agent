@@ -1,0 +1,42 @@
+# Google API
+google-api-python-client==2.108.0
+google-auth==2.25.2
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
+
+# Google Analytics 4
+google-analytics-data==0.18.0
+
+# Google Trends
+pytrends==4.9.2
+
+# Data Processing
+pandas>=2.2.0
+
+# Anthropic Claude API
+anthropic>=0.40.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Configuration
+PyYAML>=6.0
+
+# Date/Time utilities
+python-dateutil==2.8.2
+
+# ========================================
+# Level 2 Agent Dependencies
+# ========================================
+# GitHub API
+PyGithub>=2.1.1
+
+# Git operations
+GitPython>=3.1.40
+
+# Code AST parsing (TypeScript/JavaScript)
+libcst>=1.1.0
+
+# HTML parsing
+beautifulsoup4>=4.12.0
+lxml>=5.0.0

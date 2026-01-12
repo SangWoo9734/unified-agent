@@ -1,0 +1,56 @@
+# Multi-Product Agent Configuration
+# 각 프로덕트의 설정을 정의합니다
+
+products:
+  # QR Generator 프로젝트
+  qr-generator:
+    name: "QR Studio"
+
+    # Google Search Console 설정
+    # 형식: "sc-domain:yourdomain.com" 또는 "https://yourdomain.com"
+    gsc_property_url: "REPLACE_WITH_YOUR_QR_GENERATOR_DOMAIN"
+
+    # Google Analytics 4 속성 ID (숫자만)
+    # GA4 Admin > 속성 설정에서 확인
+    ga4_property_id: "REPLACE_WITH_GA4_PROPERTY_ID"
+
+    # AdSense 설정
+    has_adsense: true
+    adsense_client_id: "ca-pub-6614861725944730"
+
+    # 우선순위: high, medium, low
+    # high = 트래픽 의존도 높음 (광고 수익)
+    priority: "high"
+
+    # 분석 주기 (일): 데이터 수집할 일수
+    analysis_days: 7
+
+  # Convert Image 프로젝트
+  convert-image:
+    name: "ConvertKits"
+
+    # Google Search Console 설정
+    gsc_property_url: "https://convertkits.org"
+
+    # Google Analytics 4 속성 ID
+    ga4_property_id: "REPLACE_WITH_GA4_PROPERTY_ID"
+
+    # AdSense 설정
+    has_adsense: false
+
+    # 우선순위
+    priority: "medium"
+
+    # 분석 주기
+    analysis_days: 7
+
+# 전역 설정
+global:
+  # 리포트 생성 주기 (cron에서 사용)
+  report_frequency: "biweekly"  # weekly, biweekly, monthly
+
+  # 알림 설정 (선택사항)
+  notifications:
+    enabled: false
+    # slack_webhook: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+    # email: "your-email@example.com"

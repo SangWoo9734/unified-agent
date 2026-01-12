@@ -1,0 +1,85 @@
+name: SEO Agent - Automated Analysis & PR
+
+on:
+  # 매주 월요일 오전 9시 (KST) = 월요일 오전 0시 (UTC)
+  schedule:
+    - cron: '0 0 * * 1'
+
+  # 수동 실행 가능
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run mode (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  run-seo-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout unified-agent
+      uses: actions/checkout@v4
+      with:
+        path: unified-agent
+
+    - name: Checkout products
+      run: |
+        # qr-generator 클론
+        git clone https://github.com/SangWoo9734/qr-generator.git qr-generator
+
+        # convert-image 클론
+        git clone https://github.com/SangWoo9734/convert-image.git convert-image
+
+        # 구조 확인
+        ls -la
+        echo "✅ 프로덕트 체크아웃 완료"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: unified-agent/requirements.txt
+
+    - name: Install dependencies
+      run: |
+        cd unified-agent
+        pip install -r requirements.txt
+
+    - name: Setup Google credentials
+      run: |
+        cd unified-agent
+        mkdir -p config
+        echo '${{ secrets.GSC_CREDENTIALS }}' > config/gsc_credentials.json
+
+    - name: Run SEO Agent
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        ENABLE_AUTO_PR: ${{ github.event.inputs.dry_run == 'true' && 'false' || 'true' }}
+      run: |
+        cd unified-agent
+        python main.py
+
+    - name: Upload reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: seo-reports-${{ github.run_number }}
+        path: unified-agent/reports/
+        retention-days: 30
+
+    - name: Upload backups
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: agent-backups-${{ github.run_number }}
+        path: unified-agent/.agent_backups/
+        retention-days: 7
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ SEO Agent 실행 실패"
+        echo "로그를 확인해주세요: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
