@@ -1,0 +1,58 @@
+name: SEO Agent v2 - Repository Dispatch
+
+on:
+  # 매주 월요일 오전 9시 (KST) = 월요일 오전 0시 (UTC)
+  schedule:
+    - cron: '0 0 * * 1'
+
+  # 수동 실행 가능
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run mode (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  run-seo-agent-v2:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout unified-agent
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Setup Google credentials
+      run: |
+        mkdir -p config
+        echo '${{ secrets.GSC_CREDENTIALS }}' > config/gsc_credentials.json
+
+    - name: Run SEO Agent v2
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        ENABLE_AUTO_PR: ${{ github.event.inputs.dry_run == 'true' && 'false' || 'true' }}
+        USE_DISPATCH_V2: 'true'  # v2 활성화
+      run: python main.py
+
+    - name: Upload reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: seo-reports-${{ github.run_number }}
+        path: reports/
+        retention-days: 30
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ SEO Agent v2 실행 실패"
+        echo "로그를 확인해주세요: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

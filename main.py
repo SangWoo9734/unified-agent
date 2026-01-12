@@ -23,6 +23,7 @@ from core.collectors.adsense_collector import AdSenseCollector
 from core.analyzers.comparative_analyzer import ComparativeAnalyzer
 from core.utils.formatter import format_report_header, format_report_footer, save_report
 from core.level2_agent import Level2Agent
+from core.level2_agent_v2 import Level2AgentV2
 
 
 def load_products_config():
@@ -265,10 +266,14 @@ def main():
 
     # 8. Level 2 Agent - 자동 PR 생성 (선택사항)
     enable_auto_pr = os.getenv('ENABLE_AUTO_PR', 'false').lower() == 'true'
+    use_dispatch_v2 = os.getenv('USE_DISPATCH_V2', 'false').lower() == 'true'
 
     if enable_auto_pr:
         print("\n" + "=" * 60)
-        print("🤖 Level 2 Agent - 자동 PR 생성 시작")
+        if use_dispatch_v2:
+            print("🤖 Level 2 Agent v2.0 - Repository Dispatch 시작")
+        else:
+            print("🤖 Level 2 Agent v1.0 - 자동 PR 생성 시작")
         print("=" * 60)
 
         try:
@@ -276,40 +281,77 @@ def main():
             if not github_token:
                 print("⚠️  GITHUB_TOKEN이 설정되지 않아 PR 생성을 건너뜁니다.")
             else:
-                # Level2Agent 초기화
-                level2_agent = Level2Agent(
-                    workspace_root=os.path.dirname(__file__),
-                    anthropic_api_key=anthropic_api_key,
-                    github_token=github_token,
-                    base_branch="main",
-                    dry_run=False
-                )
+                if use_dispatch_v2:
+                    # v2.0: Repository Dispatch 방식
+                    print("📡 v2.0 모드: Repository Dispatch 이벤트 전송")
 
-                # 생성된 리포트 처리
-                result = level2_agent.process_report(comparison_path)
+                    level2_agent = Level2AgentV2(
+                        anthropic_api_key=anthropic_api_key,
+                        github_token=github_token,
+                        github_owner=os.getenv('GITHUB_OWNER', 'SangWoo9734'),
+                        dry_run=False
+                    )
 
-                # 결과 출력
-                if result['success']:
-                    print(f"\n✅ Level 2 Agent 실행 완료!")
-                    print(f"   추출된 액션: {result['actions_extracted']}개")
-                    print(f"   안전한 액션: {result['actions_safe']}개")
-                    print(f"   실행된 액션: {result['actions_executed']}개")
+                    # 생성된 리포트 처리
+                    result = level2_agent.process_report(comparison_path)
 
-                    if result.get('pr_url'):
-                        print(f"\n🎉 GitHub PR 생성 완료:")
-                        print(f"   {result['pr_url']}")
+                    # 결과 출력
+                    if result['success']:
+                        print(f"\n✅ Level 2 Agent v2.0 실행 완료!")
+                        print(f"   추출된 액션: {result['actions_extracted']}개")
+                        print(f"   안전한 액션: {result['actions_safe']}개")
+                        print(f"   Dispatch 전송: {result['dispatches_sent']}개 프로덕트")
+
+                        if result.get('dispatch_results'):
+                            print(f"\n📡 Dispatch 결과:")
+                            for product, success in result['dispatch_results'].items():
+                                status = "✅" if success else "❌"
+                                print(f"   {status} {product}")
+
+                        print(f"\n💡 각 프로덕트의 워크플로우에서 PR이 생성됩니다.")
                     else:
-                        print(f"\n⚠️  PR을 생성하지 못했습니다 (성공한 액션 없음)")
+                        print(f"\n❌ Level 2 Agent v2.0 실행 실패: {result.get('error', 'Unknown error')}")
+
                 else:
-                    print(f"\n❌ Level 2 Agent 실행 실패: {result.get('error', 'Unknown error')}")
+                    # v1.0: 직접 PR 생성 방식 (기존)
+                    print("🔧 v1.0 모드: 직접 파일 수정 및 PR 생성")
+
+                    level2_agent = Level2Agent(
+                        workspace_root=os.path.dirname(__file__),
+                        anthropic_api_key=anthropic_api_key,
+                        github_token=github_token,
+                        base_branch="main",
+                        dry_run=False
+                    )
+
+                    # 생성된 리포트 처리
+                    result = level2_agent.process_report(comparison_path)
+
+                    # 결과 출력
+                    if result['success']:
+                        print(f"\n✅ Level 2 Agent v1.0 실행 완료!")
+                        print(f"   추출된 액션: {result['actions_extracted']}개")
+                        print(f"   안전한 액션: {result['actions_safe']}개")
+                        print(f"   실행된 액션: {result['actions_executed']}개")
+
+                        if result.get('pr_url'):
+                            print(f"\n🎉 GitHub PR 생성 완료:")
+                            print(f"   {result['pr_url']}")
+                        else:
+                            print(f"\n⚠️  PR을 생성하지 못했습니다 (성공한 액션 없음)")
+                    else:
+                        print(f"\n❌ Level 2 Agent v1.0 실행 실패: {result.get('error', 'Unknown error')}")
 
         except Exception as e:
-            print(f"\n❌ Level 2 Agent 실행 중 오류: {str(e)}")
+            version = "v2.0" if use_dispatch_v2 else "v1.0"
+            print(f"\n❌ Level 2 Agent {version} 실행 중 오류: {str(e)}")
             import traceback
             traceback.print_exc()
             # Level 2 실패는 전체 실행을 중단시키지 않음
     else:
         print(f"\n💡 Tip: ENABLE_AUTO_PR=true로 설정하면 자동으로 PR을 생성합니다.")
+        print(f"   - USE_DISPATCH_V2=true: Repository Dispatch 방식 (v2.0)")
+        print(f"   - USE_DISPATCH_V2=false: 직접 PR 생성 방식 (v1.0, 기본값)")
 
     return 0
 

@@ -51,8 +51,11 @@ cp ../convert-image/agent/config/gsc_credentials.json config/
 # Level 1만 (리포트 생성)
 python main.py
 
-# Level 1 + Level 2 (PR 자동 생성)
+# Level 2 v1.0 (직접 PR 생성 - 프로덕트 clone 필요)
 ENABLE_AUTO_PR=true python main.py
+
+# Level 2 v2.0 (Repository Dispatch - 추천 ⭐)
+ENABLE_AUTO_PR=true USE_DISPATCH_V2=true GITHUB_OWNER=your_username python main.py
 ```
 
 ### GitHub Actions로 자동화
@@ -79,6 +82,41 @@ git push -u origin main
 
 ## 📊 실행 플로우
 
+### v2.0 (Repository Dispatch - 추천 ⭐)
+
+```
+매주 월요일 오전 9시 (GitHub Actions)
+    ↓
+┌──────────────────────────┐
+│  unified-agent           │
+│  Level 1: 분석           │
+│  - GSC 데이터 수집       │
+│  - GA4 데이터 수집       │
+│  - Trends 분석           │
+│  - Claude AI 분석        │
+│  - 리포트 생성           │
+└───────────┬──────────────┘
+            ↓
+┌──────────────────────────┐
+│  Level 2: Dispatch 전송  │
+│  - 액션 추출             │
+│  - 안전성 검증           │
+│  - Dispatch 이벤트 전송  │
+└───────────┬──────────────┘
+            ↓
+    📡 repository_dispatch
+            ↓
+    ┌───────┴────────┐
+    ↓                ↓
+┌─────────┐    ┌─────────┐
+│qr-gen   │    │convert  │
+│- 수정   │    │- 수정   │
+│- PR ✅  │    │- PR ✅  │
+└─────────┘    └─────────┘
+```
+
+### v1.0 (직접 PR 생성)
+
 ```
 매주 월요일 오전 9시 (GitHub Actions)
     ↓
@@ -95,6 +133,7 @@ git push -u origin main
 │  Level 2: 자동화     │
 │  - 액션 추출         │
 │  - 안전성 검증       │
+│  - 프로덕트 clone    │
 │  - 파일 자동 수정    │
 │  - Git commit        │
 │  - PR 자동 생성      │
@@ -333,28 +372,35 @@ SAFE_ACTION_TYPES = {
 
 ### v1.0.0 - 완료 ✅ (2026-01-13)
 - Level 1: 데이터 수집 및 분석
-- Level 2: PR 자동화
+- Level 2: PR 자동화 (직접 방식)
 - GitHub Actions 통합
 - 안전장치 구현
 - 실제 PR 생성 성공
 
-### v2.0.0 - 계획 중 🚧 (다음 릴리스)
+### v2.0.0 - Phase 1 & 2 완료 ✅ (2026-01-13)
 
-#### 🎯 우선순위: Repository Dispatch 마이그레이션
+#### ✅ 완료: Repository Dispatch 마이그레이션
 
-**현재 문제:**
-- 프로덕트마다 clone (2분/프로덕트)
-- 프로덕트 증가 시 시간 선형 증가
+**해결한 문제:**
+- ~~프로덕트마다 clone (2분/프로덕트)~~ → **0초** ✨
+- ~~프로덕트 증가 시 시간 선형 증가~~ → **무한 확장** ✨
 
-**해결 방안:**
-- unified-agent: 리포트만 생성 → Dispatch 이벤트 전송
+**구현 내용:**
+- **Phase 1**: unified-agent v2.0 (RepositoryDispatcher, Level2AgentV2)
+- **Phase 2**: 프로덕트 워크플로우 (qr-generator, convert-image)
+- unified-agent: Dispatch 이벤트만 전송
 - 각 프로덕트: 자체 워크플로우로 파일 수정 & PR 생성
-- Clone 시간 0초, 무한 확장 가능
 
-**이점:**
+**성과:**
 - ✅ Clone 시간 100% 단축 (2분 → 0초)
 - ✅ 프로덕트 독립적 관리
 - ✅ 무한 확장 (100개 프로덕트도 OK)
+- ✅ 완전 자동화 (이벤트 → 파일 수정 → PR)
+
+**남은 작업 (Phase 3):**
+- ⏳ End-to-End 테스트
+- ⏳ 마이그레이션 가이드 작성
+- ⏳ GitHub 배포
 
 **자세한 내용**: [docs/ARCHITECTURE_DECISIONS.md](./docs/ARCHITECTURE_DECISIONS.md#adr-005-clone-방식--repository-dispatch-방식-전환)
 
