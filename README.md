@@ -331,13 +331,34 @@ SAFE_ACTION_TYPES = {
 
 ## 🎯 로드맵
 
-### 완료 ✅
+### v1.0.0 - 완료 ✅ (2026-01-13)
 - Level 1: 데이터 수집 및 분석
 - Level 2: PR 자동화
 - GitHub Actions 통합
 - 안전장치 구현
+- 실제 PR 생성 성공
 
-### 계획 중 🚧
+### v2.0.0 - 계획 중 🚧 (다음 릴리스)
+
+#### 🎯 우선순위: Repository Dispatch 마이그레이션
+
+**현재 문제:**
+- 프로덕트마다 clone (2분/프로덕트)
+- 프로덕트 증가 시 시간 선형 증가
+
+**해결 방안:**
+- unified-agent: 리포트만 생성 → Dispatch 이벤트 전송
+- 각 프로덕트: 자체 워크플로우로 파일 수정 & PR 생성
+- Clone 시간 0초, 무한 확장 가능
+
+**이점:**
+- ✅ Clone 시간 100% 단축 (2분 → 0초)
+- ✅ 프로덕트 독립적 관리
+- ✅ 무한 확장 (100개 프로덕트도 OK)
+
+**자세한 내용**: [docs/ARCHITECTURE_DECISIONS.md](./docs/ARCHITECTURE_DECISIONS.md#adr-005-clone-방식--repository-dispatch-방식-전환)
+
+#### 추가 기능
 - LinkInjector: 내부 링크 자동 추가
 - CanonicalUpdater: Canonical URL 설정
 - OGTagUpdater: Open Graph 태그 업데이트
@@ -348,10 +369,18 @@ SAFE_ACTION_TYPES = {
 
 ## 📄 문서
 
+### 시작하기
+- **[README.md](./README.md)** - 프로젝트 개요 및 빠른 시작
 - **[SETUP_GITHUB_REPO.md](./SETUP_GITHUB_REPO.md)** - GitHub 저장소 설정 가이드
 - **[.github/GITHUB_ACTIONS_SETUP.md](./.github/GITHUB_ACTIONS_SETUP.md)** - GitHub Actions Secrets 설정
-- **[.github/README_AUTOMATION.md](./.github/README_AUTOMATION.md)** - 자동화 통합 가이드
+
+### 개발 문서
+- **[CHANGELOG.md](./CHANGELOG.md)** - 버전 히스토리 및 변경 사항
+- **[docs/ARCHITECTURE_DECISIONS.md](./docs/ARCHITECTURE_DECISIONS.md)** - 기술 의사결정 기록 (ADR)
 - **[LEVEL2_IMPLEMENTATION_SUMMARY.md](./LEVEL2_IMPLEMENTATION_SUMMARY.md)** - Level 2 구현 상세
+
+### 자동화 가이드
+- **[.github/README_AUTOMATION.md](./.github/README_AUTOMATION.md)** - 자동화 통합 가이드
 
 ---
 
