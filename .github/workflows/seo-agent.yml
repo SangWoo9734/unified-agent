@@ -23,14 +23,22 @@ jobs:
       with:
         path: unified-agent
 
-    - name: Checkout products
+    - name: Checkout qr-generator
+      uses: actions/checkout@v4
+      with:
+        repository: SangWoo9734/qr-generator
+        token: ${{ secrets.GH_PAT }}
+        path: qr-generator
+
+    - name: Checkout convert-image
+      uses: actions/checkout@v4
+      with:
+        repository: SangWoo9734/convert-image
+        token: ${{ secrets.GH_PAT }}
+        path: convert-image
+
+    - name: Verify checkout
       run: |
-        # GitHub token을 사용하여 private 저장소 클론
-        git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/SangWoo9734/qr-generator.git qr-generator
-
-        git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/SangWoo9734/convert-image.git convert-image
-
-        # 구조 확인
         ls -la
         echo "✅ 프로덕트 체크아웃 완료"
 
