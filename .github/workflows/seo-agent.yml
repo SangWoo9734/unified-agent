@@ -25,11 +25,10 @@ jobs:
 
     - name: Checkout products
       run: |
-        # qr-generator 클론
-        git clone https://github.com/SangWoo9734/qr-generator.git qr-generator
+        # GitHub token을 사용하여 private 저장소 클론
+        git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/SangWoo9734/qr-generator.git qr-generator
 
-        # convert-image 클론
-        git clone https://github.com/SangWoo9734/convert-image.git convert-image
+        git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/SangWoo9734/convert-image.git convert-image
 
         # 구조 확인
         ls -la
