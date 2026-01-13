@@ -155,10 +155,10 @@ def main():
     # 1. 환경변수 로드
     load_dotenv()
 
-    anthropic_api_key = os.getenv('ANTHROPIC_API_KEY')
-    if not anthropic_api_key:
-        print("❌ ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.")
-        print("   .env 파일을 생성하고 API 키를 입력해주세요.")
+    google_api_key = os.getenv('GOOGLE_API_KEY')
+    if not google_api_key:
+        print("❌ GOOGLE_API_KEY 환경변수가 설정되지 않았습니다.")
+        print("   .env 파일을 생성하고 Gemini API 키를 입력해주세요.")
         return 1
 
     # 2. 설정 파일 로드
@@ -202,10 +202,10 @@ def main():
 
     # 5. 비교 분석
     print("\n" + "=" * 60)
-    print("🤖 Claude AI 통합 비교 분석 중...")
+    print("🤖 Gemini AI 통합 비교 분석 중...")
     print("=" * 60)
 
-    analyzer = ComparativeAnalyzer(anthropic_api_key)
+    analyzer = ComparativeAnalyzer(google_api_key)
     comparison_report = analyzer.analyze_products(all_data)
 
     # 6. 리포트 저장
@@ -286,7 +286,7 @@ def main():
                     print("📡 v2.0 모드: Repository Dispatch 이벤트 전송")
 
                     level2_agent = Level2AgentV2(
-                        anthropic_api_key=anthropic_api_key,
+                        gemini_api_key=google_api_key,
                         github_token=github_token,
                         github_owner=os.getenv('GITHUB_OWNER', 'SangWoo9734'),
                         dry_run=False
@@ -318,7 +318,7 @@ def main():
 
                     level2_agent = Level2Agent(
                         workspace_root=os.path.dirname(__file__),
-                        anthropic_api_key=anthropic_api_key,
+                        anthropic_api_key=google_api_key,  # v1.0도 Gemini 사용
                         github_token=github_token,
                         base_branch="main",
                         dry_run=False

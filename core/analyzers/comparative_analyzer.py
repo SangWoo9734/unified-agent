@@ -3,7 +3,7 @@ Comparative Analyzer
 여러 프로덕트의 데이터를 비교 분석하고 리소스 배분 추천을 제공합니다.
 """
 
-import anthropic
+import google.generativeai as genai
 import pandas as pd
 from typing import List, Dict, Optional
 
@@ -14,9 +14,11 @@ class ComparativeAnalyzer:
     def __init__(self, api_key: str):
         """
         Args:
-            api_key: Anthropic API 키
+            api_key: Google Gemini API 키
         """
-        self.client = anthropic.Anthropic(api_key=api_key)
+        genai.configure(api_key=api_key)
+        # Gemini 2.5 Flash - 최신 무료 모델
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     def analyze_products(self, products_data: List[Dict]) -> str:
         """
@@ -39,17 +41,12 @@ class ComparativeAnalyzer:
         # 데이터 요약
         summary = self._build_summary(products_data)
 
-        # Claude에 분석 요청
+        # Gemini에 분석 요청
         prompt = self._build_analysis_prompt(summary, products_data)
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=8000,
-                messages=[{"role": "user", "content": prompt}]
-            )
-
-            return message.content[0].text
+            response = self.model.generate_content(prompt)
+            return response.text
 
         except Exception as e:
             return f"❌ 분석 중 오류 발생: {str(e)}\n\n수집된 데이터:\n{summary}"
@@ -128,7 +125,9 @@ class ComparativeAnalyzer:
                     lines.append("\n디바이스 분석:")
                     for idx, row in devices.iterrows():
                         sessions = int(row['sessions'])
-                        lines.append(f"  - {row['device_category']}: {sessions:,} 세션")
+                        # 'device' 또는 'device_category' 컬럼 사용
+                        device_name = row.get('device', row.get('device_category', 'Unknown'))
+                        lines.append(f"  - {device_name}: {sessions:,} 세션")
 
             # Google Trends
             trends_data = data.get('trends')

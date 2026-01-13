@@ -7,12 +7,11 @@ products:
     name: "QR Studio"
 
     # Google Search Console 설정
-    # 형식: "sc-domain:yourdomain.com" 또는 "https://yourdomain.com"
-    gsc_property_url: "REPLACE_WITH_YOUR_QR_GENERATOR_DOMAIN"
+    # 형식: "sc-domain:yourdomain.com" (도메인 속성)
+    gsc_property_url: "sc-domain:qr-generator.cc"
 
     # Google Analytics 4 속성 ID (숫자만)
-    # GA4 Admin > 속성 설정에서 확인
-    ga4_property_id: "REPLACE_WITH_GA4_PROPERTY_ID"
+    ga4_property_id: "517636540"
 
     # AdSense 설정
     has_adsense: true
@@ -30,10 +29,11 @@ products:
     name: "ConvertKits"
 
     # Google Search Console 설정
-    gsc_property_url: "https://convertkits.org"
+    # 도메인 속성 형식
+    gsc_property_url: "sc-domain:convertkits.org"
 
     # Google Analytics 4 속성 ID
-    ga4_property_id: "REPLACE_WITH_GA4_PROPERTY_ID"
+    ga4_property_id: "272259401"
 
     # AdSense 설정
     has_adsense: false
