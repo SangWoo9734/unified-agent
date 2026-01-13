@@ -423,6 +423,7 @@ SAFE_ACTION_TYPES = {
 ### 개발 문서
 - **[CHANGELOG.md](./CHANGELOG.md)** - 버전 히스토리 및 변경 사항
 - **[docs/ARCHITECTURE_DECISIONS.md](./docs/ARCHITECTURE_DECISIONS.md)** - 기술 의사결정 기록 (ADR)
+- **[docs/V2_ARCHITECTURE.md](./docs/V2_ARCHITECTURE.md)** - v2.0 Repository Dispatch 아키텍처 상세 가이드 ⭐
 - **[LEVEL2_IMPLEMENTATION_SUMMARY.md](./LEVEL2_IMPLEMENTATION_SUMMARY.md)** - Level 2 구현 상세
 
 ### 자동화 가이드
