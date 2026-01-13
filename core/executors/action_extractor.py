@@ -7,7 +7,7 @@ ActionExtractor
 import re
 from pathlib import Path
 from typing import List, Optional
-from anthropic import Anthropic
+import google.generativeai as genai
 
 from .models import Action
 
@@ -32,13 +32,14 @@ class ActionExtractor:
     def __init__(self, api_key: Optional[str] = None):
         """
         Args:
-            api_key: Anthropic API Key (Claude API fallback용, 선택사항)
+            api_key: Google Gemini API Key (Gemini API fallback용, 선택사항)
         """
         self.api_key = api_key
         if api_key:
-            self.client = Anthropic(api_key=api_key)
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
         else:
-            self.client = None
+            self.model = None
 
     def extract_from_report(self, report_path: str) -> List[Action]:
         """
@@ -65,9 +66,9 @@ class ActionExtractor:
         # 정규식으로 파싱 시도
         actions = self._parse_with_regex(content)
 
-        # 파싱 실패 시 Claude API fallback (선택사항)
-        if not actions and self.client:
-            actions = self._parse_with_claude(content)
+        # 파싱 실패 시 Gemini API fallback (선택사항)
+        if not actions and self.model:
+            actions = self._parse_with_gemini(content)
 
         return actions
 
@@ -191,9 +192,9 @@ class ActionExtractor:
 
         return parameters
 
-    def _parse_with_claude(self, content: str) -> List[Action]:
+    def _parse_with_gemini(self, content: str) -> List[Action]:
         """
-        Claude API를 사용하여 리포트를 파싱합니다.
+        Gemini API를 사용하여 리포트를 파싱합니다.
 
         Args:
             content: 리포트 내용
@@ -201,10 +202,10 @@ class ActionExtractor:
         Returns:
             액션 리스트
         """
-        if not self.client:
+        if not self.model:
             return []
 
-        # Claude에게 구조화된 JSON으로 액션 추출 요청
+        # Gemini에게 구조화된 JSON으로 액션 추출 요청
         prompt = f"""다음은 프로덕트 분석 리포트입니다. "High Priority" 섹션의 액션들을 JSON 배열로 추출해주세요.
 
 리포트:
@@ -227,17 +228,11 @@ class ActionExtractor:
 JSON만 출력하세요."""
 
         try:
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=2000,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
-            )
+            response = self.model.generate_content(prompt)
 
             # JSON 파싱
             import json
-            json_text = response.content[0].text.strip()
+            json_text = response.text.strip()
             # ```json ... ``` 제거
             json_text = re.sub(r'^```json\s*|\s*```$', '', json_text, flags=re.MULTILINE)
 
@@ -262,5 +257,5 @@ JSON만 출력하세요."""
             return actions
 
         except Exception as e:
-            print(f"Claude API 파싱 실패: {str(e)}")
+            print(f"Gemini API 파싱 실패: {str(e)}")
             return []

@@ -27,14 +27,14 @@ class Level2AgentV2:
     def __init__(
         self,
         github_owner: str,
-        anthropic_api_key: Optional[str] = None,
+        gemini_api_key: Optional[str] = None,
         github_token: Optional[str] = None,
         dry_run: bool = False
     ):
         """
         Args:
             github_owner: GitHub 저장소 소유자 (예: "SangWoo9734")
-            anthropic_api_key: Anthropic API Key (ActionExtractor fallback용)
+            gemini_api_key: Google Gemini API Key (ActionExtractor fallback용)
             github_token: GitHub Personal Access Token
             dry_run: True면 실제로 Dispatch 전송 안 함
         """
@@ -42,15 +42,15 @@ class Level2AgentV2:
         self.dry_run = dry_run
 
         # API Keys
-        self.anthropic_api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.gemini_api_key = gemini_api_key or os.getenv("GOOGLE_API_KEY")
         self.github_token = github_token or os.getenv("GITHUB_TOKEN")
 
         # 컴포넌트 초기화
-        self.extractor = ActionExtractor(api_key=self.anthropic_api_key)
+        self.extractor = ActionExtractor(api_key=self.gemini_api_key)
         self.validator = ActionValidator()
         self.dispatcher = RepositoryDispatcher(github_token=self.github_token)
 
-        print(f"🤖 Level 2 Agent v2.0 초기화 완료")
+        print(f"🤖 Level 2 Agent v2.0 초기화 완료 (Powered by Gemini)")
         print(f"   GitHub Owner: {self.github_owner}")
         print(f"   Dry-run: {self.dry_run}")
         print()
