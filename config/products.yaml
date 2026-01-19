@@ -24,6 +24,48 @@ products:
     # 분석 주기 (일): 데이터 수집할 일수
     analysis_days: 7
 
+    # 🎯 목표 설정 (Target Goals)
+    # 현재 상태: 191 세션/주, 0 클릭, 0.6% 참여율, $0 수익
+    goals:
+      weekly_sessions: 250  # 주간 세션 목표 (현재 191 → 1.3배 성장)
+      monthly_sessions: 1000  # 월간 세션 목표 (점진적 증가)
+      weekly_gsc_clicks: 20  # 주간 GSC 클릭 목표 (0에서 시작)
+      monthly_gsc_clicks: 80  # 월간 GSC 클릭 목표
+      target_ctr_percent: 1.5  # CTR 목표 (업계 평균)
+      target_engagement_rate: 2.0  # 참여율 목표 (현재 0.6% → 3배 개선)
+      weekly_revenue_usd: 2.0  # 주간 AdSense 수익 목표 (최소 수익화 검증)
+      monthly_revenue_usd: 8.0  # 월간 AdSense 수익 목표
+      target_rpm_usd: 1.0  # RPM 목표 (낮은 시작점)
+
+    # 🚦 임계값 설정 (Thresholds)
+    # 각 지표별로 critical(🔴 위험), warning(🟡 주의) 기준 정의
+    thresholds:
+      gsc_clicks:
+        critical: 10  # 10회 미만: 위험
+        warning: 50  # 50회 미만: 주의
+      ctr_percent:
+        critical: 0.5  # 0.5% 미만: 위험
+        warning: 1.0  # 1.0% 미만: 주의
+      engagement_rate:
+        critical: 1.0  # 1% 미만: 위험
+        warning: 3.0  # 3% 미만: 주의
+      adsense_rpm:
+        critical: 0.5  # $0.5 미만: 위험
+        warning: 1.0  # $1.0 미만: 주의
+      avg_position:
+        critical: 50  # 50위 이하: 위험
+        warning: 30  # 30위 이하: 주의
+      sessions:
+        critical: 50  # 50 세션 미만: 위험
+        warning: 200  # 200 세션 미만: 주의
+
+    # 📊 Health Score 가중치 (합계 100%)
+    health_score_weights:
+      traffic: 30  # 트래픽 (GSC 클릭 + GA4 세션)
+      engagement: 25  # 참여율
+      seo: 25  # SEO 성과 (CTR, 평균 순위)
+      revenue: 20  # 수익 (AdSense)
+
   # Convert Image 프로젝트
   convert-image:
     name: "ConvertKits"
@@ -43,6 +85,42 @@ products:
 
     # 분석 주기
     analysis_days: 7
+
+    # 🎯 목표 설정 (Target Goals)
+    # 현재 상태: 79 세션/주, GSC 데이터 없음, 0.8% 참여율
+    goals:
+      weekly_sessions: 120  # 주간 세션 목표 (현재 79 → 1.5배 성장)
+      monthly_sessions: 500  # 월간 세션 목표 (점진적 증가)
+      weekly_gsc_clicks: 15  # 주간 GSC 클릭 목표 (GSC 설정 후 시작)
+      monthly_gsc_clicks: 60  # 월간 GSC 클릭 목표
+      target_ctr_percent: 2.0  # CTR 목표 (도구 특성상 높게)
+      target_engagement_rate: 3.0  # 참여율 목표 (현재 0.8% → 약 4배 개선)
+      # AdSense 없음
+
+    # 🚦 임계값 설정 (Thresholds)
+    thresholds:
+      gsc_clicks:
+        critical: 10  # 10회 미만: 위험
+        warning: 40  # 40회 미만: 주의
+      ctr_percent:
+        critical: 0.8  # 0.8% 미만: 위험
+        warning: 1.5  # 1.5% 미만: 주의
+      engagement_rate:
+        critical: 2.0  # 2% 미만: 위험 (도구 특성상 높게)
+        warning: 5.0  # 5% 미만: 주의
+      avg_position:
+        critical: 50  # 50위 이하: 위험
+        warning: 30  # 30위 이하: 주의
+      sessions:
+        critical: 30  # 30 세션 미만: 위험
+        warning: 100  # 100 세션 미만: 주의
+
+    # 📊 Health Score 가중치 (합계 100%)
+    health_score_weights:
+      traffic: 35  # 트래픽 (GSC 클릭 + GA4 세션)
+      engagement: 35  # 참여율 (도구 사용률 중요)
+      seo: 30  # SEO 성과 (CTR, 평균 순위)
+      # revenue: 0 (AdSense 없음)
 
 # 전역 설정
 global:
