@@ -124,8 +124,8 @@ products:
 
 # 전역 설정
 global:
-  # 리포트 생성 주기 (cron에서 사용)
-  report_frequency: "biweekly"  # weekly, biweekly, monthly
+  # 리포트 생성 주기
+  report_frequency: "daily"  # weekly, biweekly, monthly, daily
 
   # 알림 설정 (선택사항)
   notifications:
