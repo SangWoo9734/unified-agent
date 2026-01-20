@@ -15,7 +15,7 @@ pandas>=2.2.0
 
 # AI APIs
 anthropic>=0.40.0  # Level 1 Agent
-google-generativeai>=0.3.0  # Level 2 Agent
+google-genai>=0.3.0  # Level 2 Agent
 
 # Environment Variables
 python-dotenv==1.0.0

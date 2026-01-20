@@ -3,7 +3,7 @@ Comparative Analyzer
 여러 프로덕트의 데이터를 비교 분석하고 리소스 배분 추천을 제공합니다.
 """
 
-import google.generativeai as genai
+from google import genai
 import pandas as pd
 from typing import List, Dict, Optional
 
@@ -16,9 +16,9 @@ class ComparativeAnalyzer:
         Args:
             api_key: Google Gemini API 키
         """
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         # Gemini 2.0 Flash - 최신 안정 모델
-        self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.model_id = 'gemini-2.0-flash'
 
     def analyze_products(self, products_data: List[Dict]) -> str:
         """
@@ -49,7 +49,10 @@ class ComparativeAnalyzer:
 
         try:
             print(f"   💬 Gemini AI 분석 요청 중... (프롬프트 크기: {len(prompt)}자)")
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt
+            )
             print(f"   ✅ Gemini AI 분석 완료")
             return response.text
 

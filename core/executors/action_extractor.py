@@ -7,7 +7,7 @@ ActionExtractor
 import re
 from pathlib import Path
 from typing import List, Optional
-import google.generativeai as genai
+from google import genai
 
 from .models import Action
 
@@ -36,10 +36,10 @@ class ActionExtractor:
         """
         self.api_key = api_key
         if api_key:
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = genai.Client(api_key=api_key)
+            self.model_id = 'gemini-1.5-flash'
         else:
-            self.model = None
+            self.client = None
 
     def extract_from_report(self, report_path: str) -> List[Action]:
         """
@@ -228,7 +228,10 @@ class ActionExtractor:
 JSON만 출력하세요."""
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt
+            )
 
             # JSON 파싱
             import json
