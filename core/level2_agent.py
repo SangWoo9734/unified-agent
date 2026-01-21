@@ -26,7 +26,7 @@ class Level2Agent:
     def __init__(
         self,
         workspace_root: str = ".",
-        anthropic_api_key: Optional[str] = None,
+        gemini_api_key: Optional[str] = None,
         github_token: Optional[str] = None,
         base_branch: str = "main",
         dry_run: bool = False
@@ -34,7 +34,7 @@ class Level2Agent:
         """
         Args:
             workspace_root: 작업 루트 디렉토리 (unified-agent 디렉토리)
-            anthropic_api_key: Anthropic API Key (ActionExtractor fallback용, 선택사항)
+            gemini_api_key: Google Gemini API Key (ActionExtractor fallback용, 선택사항)
             github_token: GitHub Personal Access Token (PRCreator용)
             base_branch: PR의 base 브랜치 (기본: "main")
             dry_run: True면 실제로 파일 변경/PR 생성하지 않음
@@ -43,11 +43,11 @@ class Level2Agent:
         self.dry_run = dry_run
 
         # API Keys
-        self.anthropic_api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.gemini_api_key = gemini_api_key or os.getenv("GOOGLE_API_KEY")
         self.github_token = github_token or os.getenv("GITHUB_TOKEN")
 
         # 컴포넌트 초기화
-        self.extractor = ActionExtractor(api_key=self.anthropic_api_key)
+        self.extractor = ActionExtractor(api_key=self.gemini_api_key)
         self.validator = ActionValidator()
         self.meta_updater = MetaUpdater(workspace_root=str(self.workspace_root))
 
