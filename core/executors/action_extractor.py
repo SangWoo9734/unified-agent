@@ -85,7 +85,8 @@ class ActionExtractor:
         actions = []
 
         # High Priority 섹션 찾기
-        high_priority_pattern = r'##\s*High Priority Actions?(.*?)(?=##|\Z)'
+        # ComparativeAnalyzer가 생성하는 "### 🔴 High Priority (긴급 - 이번 주)" 및 기본 형식을 모두 지원
+        high_priority_pattern = r'##+.*?(?:High Priority|최우선 과제|🔴 High Priority).*?(.*?)(?=##|\Z)'
         match = re.search(high_priority_pattern, content, re.DOTALL | re.IGNORECASE)
 
         if not match:
@@ -94,8 +95,8 @@ class ActionExtractor:
         high_priority_section = match.group(1)
 
         # 각 액션 파싱
-        # 형식: 1. **[Product]** Description
-        action_pattern = r'\d+\.\s*\*\*\[([^\]]+)\]\*\*\s*(.+?)(?=\d+\.\s*\*\*\[|\Z)'
+        # 형식: 1. **[Product]** Description 또는 1. [액션] - 담당: [프로덕트] 등 유연하게 대응
+        action_pattern = r'\d+\.\s*(?:\*\*\[|\[)([^\]\-\n]+)(?:\]\*\*|\])\s*(.+?)(?=\d+\.\s*(?:\*\*\[|\[)|\Z)'
         action_matches = re.finditer(action_pattern, high_priority_section, re.DOTALL)
 
         for idx, action_match in enumerate(action_matches, start=1):
