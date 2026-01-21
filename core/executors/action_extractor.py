@@ -67,7 +67,7 @@ class ActionExtractor:
         actions = self._parse_with_regex(content)
 
         # 파싱 실패 시 Gemini API fallback (선택사항)
-        if not actions and self.model:
+        if not actions and self.client:
             actions = self._parse_with_gemini(content)
 
         return actions

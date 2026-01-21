@@ -318,7 +318,7 @@ def main():
 
                     level2_agent = Level2Agent(
                         workspace_root=os.path.dirname(__file__),
-                        anthropic_api_key=google_api_key,  # v1.0도 Gemini 사용
+                        gemini_api_key=google_api_key,  # v1.0도 Gemini 사용
                         github_token=github_token,
                         base_branch="main",
                         dry_run=False
