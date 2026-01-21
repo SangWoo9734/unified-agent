@@ -1,6 +1,8 @@
 name: SEO Agent - Automated Analysis & PR
 
 on:
+  push:
+    branches: [ main ]
   # 매일 오전 9시 (KST) = 오전 0시 (UTC)
   schedule:
     - cron: '0 0 * * *'
