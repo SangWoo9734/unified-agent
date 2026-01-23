@@ -95,31 +95,52 @@ class ActionExtractor:
         high_priority_section = match.group(1)
 
         # 각 액션 파싱
-        # 형식: 1. **[Product]** Description 또는 1. [액션] - 담당: [프로덕트] 등 유연하게 대응
-        action_pattern = r'\d+\.\s*(?:\*\*\[|\[)([^\]\-\n]+)(?:\]\*\*|\])\s*(.+?)(?=\d+\.\s*(?:\*\*\[|\[)|\Z)'
+        # 형식 1: 1. **[Product]** Description
+        # 형식 2: 1. [액션 요약] - 담당: [Product], ...
+        action_pattern = r'\d+\.\s*(.*?)(?=\d+\.\s*|\Z)'
         action_matches = re.finditer(action_pattern, high_priority_section, re.DOTALL)
 
         for idx, action_match in enumerate(action_matches, start=1):
-            product_id = action_match.group(1).strip().lower().replace(' ', '-')
-            description_block = action_match.group(2).strip()
+            action_text = action_match.group(1).strip()
+            if not action_text:
+                continue
 
-            # 설명 첫 줄
-            description_lines = description_block.split('\n')
-            description = description_lines[0].strip()
+            # Product ID 추출 시도
+            # 1. 담당: [Product] 패턴
+            product_match = re.search(r'담당:\s*(?:\[|\*\*\[)([^\]]+)(?:\]|\)\*\*)', action_text)
+            if not product_match:
+                # 2. [Product] Description 패턴
+                product_match = re.search(r'^(?:\[|\*\*\[)([^\]]+)(?:\]|\)\*\*)', action_text)
+            
+            if product_match:
+                product_name = product_match.group(1).strip()
+                # 맵핑: QR Studio -> qr-generator, ConvertKits -> convert-image
+                product_name_lower = product_name.lower()
+                if 'qr studio' in product_name_lower or 'qr-studio' in product_name_lower:
+                    product_id = 'qr-generator'
+                elif 'convertkits' in product_name_lower:
+                    product_id = 'convert-image'
+                else:
+                    product_id = product_name_lower.replace(' ', '-')
+            else:
+                product_id = "unknown"
 
-            # 파일 경로 추출
-            file_match = re.search(r'File:\s*`([^`]+)`', description_block)
+            # 설명 및 파일 경로 추출
+            description = action_text.split('\n')[0].strip()
+            
+            # 파일 경로 추출 (마크다운 백틱 `file_path` 찾기)
+            file_match = re.search(r'`([^`]+\.(?:tsx|ts|jsx|js|html|py))`', action_text)
             target_file = file_match.group(1) if file_match else None
 
             # 예상 효과 추출
-            impact_match = re.search(r'Expected Impact:\s*(.+)', description_block)
+            impact_match = re.search(r'예상 효과:\s*(.+)', action_text)
             expected_impact = impact_match.group(1).strip() if impact_match else None
 
             # action_type 추론
             action_type = self._infer_action_type(description)
 
             # parameters 추출
-            parameters = self._extract_parameters(description, description_block)
+            parameters = self._extract_parameters(description, action_text)
 
             # Action 객체 생성
             action = Action(
@@ -150,15 +171,16 @@ class ActionExtractor:
         """
         desc_lower = description.lower()
 
-        if "meta title" in desc_lower or "title" in desc_lower:
+        # 한국어 키워드 포함
+        if any(kw in desc_lower for kw in ["meta title", "title", "타이틀", "제목"]):
             return "update_meta_title"
-        elif "meta description" in desc_lower or "description" in desc_lower:
+        elif any(kw in desc_lower for kw in ["meta description", "description", "설명"]):
             return "update_meta_description"
-        elif "internal link" in desc_lower or "link" in desc_lower:
+        elif any(kw in desc_lower for kw in ["internal link", "link", "링크", "연결"]):
             return "add_internal_link"
-        elif "canonical" in desc_lower:
+        elif any(kw in desc_lower for kw in ["canonical", "캐노니컬", "표준"]):
             return "update_canonical_url"
-        elif "og tag" in desc_lower or "open graph" in desc_lower:
+        elif any(kw in desc_lower for kw in ["og tag", "open graph", "오픈그래프"]):
             return "update_og_tags"
         else:
             # 기본값
@@ -177,17 +199,24 @@ class ActionExtractor:
         """
         parameters = {}
 
-        # 따옴표 안의 내용 추출
+        # 1. 따옴표 안의 내용 추출 ("..." 또는 '...')
         quote_match = re.search(r'["\']([^"\']+)["\']', description)
         if quote_match:
             quoted_text = quote_match.group(1)
+        else:
+            # 2. 한국어 조사 전의 내용 추출 ( ~로, ~으로 )
+            # 예: "타이틀을 Free QR Generator로 변경" -> Free QR Generator
+            ko_match = re.search(r'([a-zA-Z0-9\s가-힣]+)(?:으로|로)\s+(?:변경|업데이트|추가|교체)', description)
+            quoted_text = ko_match.group(1).strip() if ko_match else None
 
+        if quoted_text:
             # action_type에 따라 파라미터 매핑
-            if "title" in description.lower():
+            action_type = self._infer_action_type(description)
+            if action_type == "update_meta_title":
                 parameters["new_title"] = quoted_text
-            elif "description" in description.lower():
+            elif action_type == "update_meta_description":
                 parameters["new_description"] = quoted_text
-            elif "link" in description.lower():
+            elif action_type == "add_internal_link":
                 parameters["link_url"] = quoted_text
                 parameters["link_text"] = quoted_text
 
@@ -203,7 +232,7 @@ class ActionExtractor:
         Returns:
             액션 리스트
         """
-        if not self.model:
+        if not self.client:
             return []
 
         # Gemini에게 구조화된 JSON으로 액션 추출 요청
