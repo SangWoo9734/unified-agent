@@ -64,4 +64,25 @@ class ActionExecutor(ABC):
             product_root = self.workspace_root / product_id
 
         file_path = product_root / relative_path
+        
+        # 파일이 없으면 일반적인 변종 시도 (Gemini 경로 추측 보정)
+        if not file_path.exists():
+            alternates = []
+            rel_str = str(relative_path)
+            if "public/" in rel_str:
+                alternates.append(rel_str.replace("public/", ""))
+            else:
+                alternates.append(f"public/{rel_str}")
+                
+            if "page.tsx" in rel_str:
+                alternates.append(rel_str.replace("page.tsx", "layout.tsx"))
+            elif "layout.tsx" in rel_str:
+                alternates.append(rel_str.replace("layout.tsx", "page.tsx"))
+
+            for alt in alternates:
+                alt_path = product_root / alt
+                if alt_path.exists():
+                    print(f"   💡 경로 수정됨: {relative_path} -> {alt}")
+                    return alt_path
+
         return file_path

@@ -177,9 +177,9 @@ class MetaUpdater(ActionExecutor):
 
             # 파일 타입에 따라 처리
             if file_path.suffix in [".tsx", ".ts", ".jsx", ".js"]:
-                result = self._update_tsx_meta(file_path, new_title, new_description)
+                result = self._update_tsx_meta(action, file_path, new_title, new_description)
             elif file_path.suffix in [".html", ".htm"]:
-                result = self._update_html_meta(file_path, new_title, new_description)
+                result = self._update_html_meta(action, file_path, new_title, new_description)
             else:
                 return ExecutionResult(
                     action_id=action.id,
@@ -204,7 +204,7 @@ class MetaUpdater(ActionExecutor):
             )
 
     def _update_tsx_meta(
-        self, file_path: Path, new_title: Optional[str], new_description: Optional[str]
+        self, action: Action, file_path: Path, new_title: Optional[str], new_description: Optional[str]
     ) -> ExecutionResult:
         """
         TSX 파일의 metadata 객체를 변경합니다.
@@ -233,15 +233,16 @@ class MetaUpdater(ActionExecutor):
             # title 변경
             if new_title:
                 # 1. Next.js metadata 객체: title: "..."
+                # (더 유연한 매칭: 대소문자 무시, 여러 줄 무시)
                 title_pattern_obj = r'(title:\s*["\'])([^"\']+)(["\'])'
                 # 2. React 컴포넌트 Props: title="..."
                 title_pattern_prop = r'(title\s*=\s*["\'])([^"\']+)(["\'])'
                 
-                if re.search(title_pattern_obj, modified_code):
-                    modified_code = re.sub(title_pattern_obj, rf'\1{new_title}\3', modified_code)
+                if re.search(title_pattern_obj, modified_code, re.IGNORECASE):
+                    modified_code = re.sub(title_pattern_obj, rf'\1{new_title}\3', modified_code, flags=re.IGNORECASE)
                     changed = True
-                elif re.search(title_pattern_prop, modified_code):
-                    modified_code = re.sub(title_pattern_prop, rf'\1{new_title}\3', modified_code)
+                elif re.search(title_pattern_prop, modified_code, re.IGNORECASE):
+                    modified_code = re.sub(title_pattern_prop, rf'\1{new_title}\3', modified_code, flags=re.IGNORECASE)
                     changed = True
 
             # description 변경
@@ -251,18 +252,18 @@ class MetaUpdater(ActionExecutor):
                 # 2. React 컴포넌트 Props: description="..."
                 desc_pattern_prop = r'(description\s*=\s*["\'])([^"\']+)(["\'])'
                 
-                if re.search(desc_pattern_obj, modified_code):
-                    modified_code = re.sub(desc_pattern_obj, rf'\1{new_description}\3', modified_code)
+                if re.search(desc_pattern_obj, modified_code, re.IGNORECASE):
+                    modified_code = re.sub(desc_pattern_obj, rf'\1{new_description}\3', modified_code, flags=re.IGNORECASE)
                     changed = True
-                elif re.search(desc_pattern_prop, modified_code):
-                    modified_code = re.sub(desc_pattern_prop, rf'\1{new_description}\3', modified_code)
+                elif re.search(desc_pattern_prop, modified_code, re.IGNORECASE):
+                    modified_code = re.sub(desc_pattern_prop, rf'\1{new_description}\3', modified_code, flags=re.IGNORECASE)
                     changed = True
 
             if not changed:
                 return ExecutionResult(
-                    action_id="N/A",
+                    action_id=action.id,
                     success=False,
-                    message="metadata 객체를 찾을 수 없습니다",
+                    message="metadata 또는 title/description 태그를 찾을 수 없습니다",
                     error="Metadata not found"
                 )
 
@@ -271,15 +272,15 @@ class MetaUpdater(ActionExecutor):
                 f.write(modified_code)
 
             return ExecutionResult(
-                action_id="N/A",
+                action_id=action.id,
                 success=True,
-                message=f"TSX 메타데이터 변경 완료: {file_path.name}",
+                message=f"TSX 메타데이터 필수 항목 변경 완료: {file_path.name}",
                 changed_files=[str(file_path)],
                 backup_path=backup_path
             )
 
     def _update_html_meta(
-        self, file_path: Path, new_title: Optional[str], new_description: Optional[str]
+        self, action: Action, file_path: Path, new_title: Optional[str], new_description: Optional[str]
     ) -> ExecutionResult:
         """
         HTML 파일의 <title>과 <meta description>을 변경합니다.
@@ -319,7 +320,7 @@ class MetaUpdater(ActionExecutor):
 
             if not changed:
                 return ExecutionResult(
-                    action_id="N/A",
+                    action_id=action.id,
                     success=False,
                     message="<title> 또는 <meta description>을 찾을 수 없습니다",
                     error="Tags not found"
@@ -330,7 +331,7 @@ class MetaUpdater(ActionExecutor):
                 f.write(str(soup))
 
             return ExecutionResult(
-                action_id="N/A",
+                action_id=action.id,
                 success=True,
                 message=f"HTML 메타데이터 변경 완료: {file_path.name}",
                 changed_files=[str(file_path)],
