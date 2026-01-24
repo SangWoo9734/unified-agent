@@ -108,43 +108,52 @@ class ActionExtractor:
             if not action_text:
                 continue
 
-            # Product ID 추출 시도
-            # 1. 담당: [Product] 패턴
-            product_match = re.search(r'담당:\s*(?:\[|\*\*\[)([^\]]+)(?:\]|\*\*)', action_text)
-            if not product_match:
-                # 2. [Product] Description 패턴
-                product_match = re.search(r'^(?:\[|\*\*\[)([^\]]+)(?:\]|\*\*)', action_text)
+            # Product ID 추출 시도 (강력한 패턴 매칭)
+            product_id = "unknown"
             
-            if product_match:
-                product_name = product_match.group(1).strip()
-                print(f"DEBUG: 감지된 프로덕트 이름: '{product_name}'")
-                # 맵핑: QR Studio -> qr-generator, ConvertKits -> convert-image
-                product_name_lower = product_name.lower()
-                if any(kw in product_name_lower for kw in ['qr studio', 'qr-studio', 'qr generator', 'qr-generator']):
-                    product_id = 'qr-generator'
-                elif any(kw in product_name_lower for kw in ['convertkits', 'convert-image', 'convert image']):
-                    product_id = 'convert-image'
-                else:
-                    product_id = product_name_lower.replace(' ', '-')
-            else:
-                product_id = "unknown"
+            # 1. 명시적 키워드 우선 체크 (가장 확실함)
+            text_lower = action_text.lower()
+            if any(kw in text_lower for kw in ['qr studio', 'qr-studio', 'qr generator', 'qr-generator']):
+                product_id = 'qr-generator'
+            elif any(kw in text_lower for kw in ['convertkits', 'convert-image', 'convert image']):
+                product_id = 'convert-image'
+            
+            # 2. 키워드로 못 찾았다면 정규식 시도
+            if product_id == "unknown":
+                # [Product Name] 또는 **[Product Name]** 등 추출
+                product_match = re.search(r'(?:\[|\*\*\[|\[\*\*)+([^\]\*]+)(?:\]|\*\*|\]\*\*)+', action_text)
+                if product_match:
+                    product_name = product_match.group(1).strip()
+                    print(f"DEBUG: 정규식으로 감지된 프로덕트 이름: '{product_name}'")
+                    pn_lower = product_name.lower()
+                    if any(kw in pn_lower for kw in ['qr studio', 'qr-studio', 'qr generator', 'qr-generator']):
+                        product_id = 'qr-generator'
+                    elif any(kw in pn_lower for kw in ['convertkits', 'convert-image', 'convert image']):
+                        product_id = 'convert-image'
+                    else:
+                        product_id = pn_lower.replace(' ', '-')
 
             # 설명 추출: 제품명이 있는 줄을 제외한 첫 번째 의미 있는 줄 찾기
             lines = [line.strip() for line in action_text.split('\n') if line.strip()]
             description = ""
             for line in lines:
-                # 제품명이나 메타 데이터 줄 제외
-                if re.search(r'^(?:\[|\*\*\[)([^\]]+)(?:\]|\*\*)', line):
-                    continue
+                # 제품명 대괄호 구문 제외
+                if re.search(r'(?:\[|\*\*\[|\[\*\*)+([^\]\*]+)(?:\]|\*\*|\]\*\*)+', line):
+                    # 만약 줄 전체가 제품명 관련이라면 패스, 아니면 내용만 추출
+                    clean_line = re.sub(r'(?:\[|\*\*\[|\[\*\*)+[^\]\*]+(?:\]|\*\*|\]\*\*)+', '', line).strip()
+                    if not clean_line:
+                        continue
+                    description = clean_line
+                    break
+                
                 if line.startswith('- ') or line.startswith('* '):
-                    # 불렛 포인트면 기호 제거
                     description = re.sub(r'^[-*]\s*', '', line)
                     break
                 description = line
                 break
             
             if not description and lines:
-                description = lines[0] # 최후의 수단
+                description = lines[0]
             
             # 파일 경로 추출 (마크다운 백틱 `file_path` 찾기)
             file_match = re.search(r'`([^`]+\.(?:tsx|ts|jsx|js|html|py))`', action_text)
