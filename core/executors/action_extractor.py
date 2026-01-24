@@ -97,8 +97,9 @@ class ActionExtractor:
         # 각 액션 파싱
         # 형식 1: 1. **[Product]** Description
         # 형식 2: 1. [액션 요약] - 담당: [Product], ...
-        action_pattern = r'\d+\.\s*(.*?)(?=\d+\.\s*|\Z)'
-        action_matches = re.finditer(action_pattern, high_priority_section, re.DOTALL)
+        # (주의: 0.5% 같은 소수점에 반응하지 않도록 줄 시작(^)에서 숫자. 형태만 매칭)
+        action_pattern = r'^\d+\.\s*(.*?)(?=^\d+\.\s*|\Z)'
+        action_matches = re.finditer(action_pattern, high_priority_section, re.DOTALL | re.MULTILINE)
 
         for idx, action_match in enumerate(action_matches, start=1):
             action_text = action_match.group(1).strip()
