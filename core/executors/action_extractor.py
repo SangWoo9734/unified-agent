@@ -90,15 +90,17 @@ class ActionExtractor:
         match = re.search(high_priority_pattern, content, re.DOTALL | re.IGNORECASE)
 
         if not match:
+            print(f"⚠️  High Priority 섹션을 찾지 못했습니다. (패턴: {high_priority_pattern})")
             return actions
 
         high_priority_section = match.group(1)
+        print(f"DEBUG: High Priority Section Content (first 100 chars):\n{high_priority_section[:100]}...")
 
         # 각 액션 파싱
         # 형식 1: 1. **[Product]** Description
         # 형식 2: 1. [액션 요약] - 담당: [Product], ...
-        # (주의: 0.5% 같은 소수점에 반응하지 않도록 줄 시작(^)에서 숫자. 형태만 매칭)
-        action_pattern = r'^\d+\.\s*(.*?)(?=^\d+\.\s*|\Z)'
+        # (주의: 소수점에 반응하지 않도록 줄 시작에서 숫자. 형태만 매칭. 공백 허용)
+        action_pattern = r'^[ \t]*\d+\.\s*(.*?)(?=^[ \t]*\d+\.\s*|\Z)'
         action_matches = re.finditer(action_pattern, high_priority_section, re.DOTALL | re.MULTILINE)
 
         for idx, action_match in enumerate(action_matches, start=1):
@@ -108,13 +110,14 @@ class ActionExtractor:
 
             # Product ID 추출 시도
             # 1. 담당: [Product] 패턴
-            product_match = re.search(r'담당:\s*(?:\[|\*\*\[)([^\]]+)(?:\]|\)\*\*)', action_text)
+            product_match = re.search(r'담당:\s*(?:\[|\*\*\[)([^\]]+)(?:\]|\*\*)', action_text)
             if not product_match:
                 # 2. [Product] Description 패턴
-                product_match = re.search(r'^(?:\[|\*\*\[)([^\]]+)(?:\]|\)\*\*)', action_text)
+                product_match = re.search(r'^(?:\[|\*\*\[)([^\]]+)(?:\]|\*\*)', action_text)
             
             if product_match:
                 product_name = product_match.group(1).strip()
+                print(f"DEBUG: 감지된 프로덕트 이름: '{product_name}'")
                 # 맵핑: QR Studio -> qr-generator, ConvertKits -> convert-image
                 product_name_lower = product_name.lower()
                 if 'qr studio' in product_name_lower or 'qr-studio' in product_name_lower:

@@ -113,6 +113,11 @@ class Level2Agent:
 
             # 3. 액션 검증
             print("🛡️  액션 안전성 검증 중...")
+            for action in actions:
+                is_valid, reason = self.validator.validate(action)
+                status = "✅ Safe" if is_valid else "❌ Unsafe"
+                print(f"   - {status}: {action.description[:60]}... (Reason: {reason})")
+            
             safe_actions = self.validator.filter_safe_actions(actions)
             print(f"   안전한 액션: {len(safe_actions)}개\n")
 
