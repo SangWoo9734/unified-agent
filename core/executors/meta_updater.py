@@ -177,9 +177,9 @@ class MetaUpdater(ActionExecutor):
 
             # 파일 타입에 따라 처리
             if file_path.suffix in [".tsx", ".ts", ".jsx", ".js"]:
-                result = self._update_tsx_meta(action, file_path, new_title, new_description)
+                result = self._update_tsx_meta(action, file_path, new_title, new_description, action.parameters.get("canonical_url"), action.parameters.get("og_image"))
             elif file_path.suffix in [".html", ".htm"]:
-                result = self._update_html_meta(action, file_path, new_title, new_description)
+                result = self._update_html_meta(action, file_path, new_title, new_description, action.parameters.get("canonical_url"))
             else:
                 return ExecutionResult(
                     action_id=action.id,
@@ -257,6 +257,22 @@ class MetaUpdater(ActionExecutor):
                     changed = True
                 elif re.search(desc_pattern_prop, modified_code, re.IGNORECASE):
                     modified_code = re.sub(desc_pattern_prop, rf'\1{new_description}\3', modified_code, flags=re.IGNORECASE)
+                    changed = True
+
+            # canonical 변경
+            canonical_url = action.parameters.get("canonical_url")
+            if canonical_url:
+                canonical_pattern = r'(canonical:\s*["\'])([^"\']+)(["\'])'
+                if re.search(canonical_pattern, modified_code, re.IGNORECASE):
+                    modified_code = re.sub(canonical_pattern, rf'\1{canonical_url}\3', modified_code, flags=re.IGNORECASE)
+                    changed = True
+            
+            # OG Image 변경
+            og_image = action.parameters.get("og_image")
+            if og_image:
+                og_pattern = r'((?:url|images|ogImage):\s*["\'])([^"\']+)(["\'])'
+                if re.search(og_pattern, modified_code, re.IGNORECASE):
+                    modified_code = re.sub(og_pattern, rf'\1{og_image}\3', modified_code, flags=re.IGNORECASE)
                     changed = True
 
             if not changed:

@@ -13,6 +13,7 @@ from .executors.models import Action, ExecutionResult
 from .executors.action_extractor import ActionExtractor
 from .executors.action_validator import ActionValidator
 from .executors.meta_updater import MetaUpdater
+from .executors.link_injector import LinkInjector
 from .executors.pr_creator import PRCreator
 
 
@@ -50,6 +51,7 @@ class Level2Agent:
         self.extractor = ActionExtractor(api_key=self.gemini_api_key)
         self.validator = ActionValidator()
         self.meta_updater = MetaUpdater(workspace_root=str(self.workspace_root))
+        self.link_injector = LinkInjector(workspace_root=str(self.workspace_root))
 
         # PRCreator는 실제 사용 시점에 초기화 (프로덕트별로 다름)
         self.base_branch = base_branch
@@ -229,8 +231,10 @@ class Level2Agent:
                 continue
 
             # action_type에 따라 적절한 executor 선택
-            if action.action_type in ["update_meta_title", "update_meta_description"]:
+            if action.action_type in ["update_meta_title", "update_meta_description", "update_canonical_url", "update_og_tags"]:
                 executor = self.meta_updater
+            elif action.action_type == "add_internal_link":
+                executor = self.link_injector
             else:
                 # 아직 구현되지 않은 액션 타입
                 print("⚠️  [NOT IMPLEMENTED]")
