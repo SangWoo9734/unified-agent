@@ -37,7 +37,7 @@ class ActionExtractor:
         self.api_key = api_key
         if api_key:
             self.client = genai.Client(api_key=api_key)
-            self.model_id = 'gemini-1.5-flash'
+            self.model_id = 'gemini-2.0-flash'
         else:
             self.client = None
 
@@ -84,9 +84,9 @@ class ActionExtractor:
         """
         actions = []
 
-        # High Priority 섹션 찾기
-        # ComparativeAnalyzer가 생성하는 "### 🔴 High Priority (긴급 - 이번 주)" 및 기본 형식을 모두 지원
-        high_priority_pattern = r'##+.*?(?:High Priority|최우선 과제|🔴 High Priority).*?(.*?)(?=##|\Z)'
+        # ComparativeAnalyzer가 생성하는 "### 🔴 High Priority (긴급 - 즉시 실행)" 및 기타 변종 지원
+        # (헤더 뒤에 오는 : 나 공백 등을 더 유연하게 매칭)
+        high_priority_pattern = r'##+.*?(?:High Priority|최우선 과제|🔴 High Priority)[:\s]*.*?\n(.*?)(?=##|\Z)'
         match = re.search(high_priority_pattern, content, re.DOTALL | re.IGNORECASE)
 
         if not match:
