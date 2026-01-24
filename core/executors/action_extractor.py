@@ -85,8 +85,8 @@ class ActionExtractor:
         actions = []
 
         # ComparativeAnalyzer가 생성하는 "### 🔴 High Priority (긴급 - 즉시 실행)" 및 기타 변종 지원
-        # (헤더 뒤에 오는 : 나 공백 등을 더 유연하게 매칭)
-        high_priority_pattern = r'##+.*?(?:High Priority|최우선 과제|🔴 High Priority)[:\s]*.*?\n(.*?)(?=##|\Z)'
+        # (헤더 뒤의 텍스트가 줄바꿈 없이 바로 시작하는 경우도 고려)
+        high_priority_pattern = r'##+.*?(?:High Priority|최우선 과제|🔴 High Priority)[:\s]*(.*?)(?=##|\Z)'
         match = re.search(high_priority_pattern, content, re.DOTALL | re.IGNORECASE)
 
         if not match:
@@ -120,21 +120,37 @@ class ActionExtractor:
                 print(f"DEBUG: 감지된 프로덕트 이름: '{product_name}'")
                 # 맵핑: QR Studio -> qr-generator, ConvertKits -> convert-image
                 product_name_lower = product_name.lower()
-                if 'qr studio' in product_name_lower or 'qr-studio' in product_name_lower:
+                if any(kw in product_name_lower for kw in ['qr studio', 'qr-studio', 'qr generator', 'qr-generator']):
                     product_id = 'qr-generator'
-                elif 'convertkits' in product_name_lower:
+                elif any(kw in product_name_lower for kw in ['convertkits', 'convert-image', 'convert image']):
                     product_id = 'convert-image'
                 else:
                     product_id = product_name_lower.replace(' ', '-')
             else:
                 product_id = "unknown"
 
-            # 설명 및 파일 경로 추출
-            description = action_text.split('\n')[0].strip()
+            # 설명 추출: 제품명이 있는 줄을 제외한 첫 번째 의미 있는 줄 찾기
+            lines = [line.strip() for line in action_text.split('\n') if line.strip()]
+            description = ""
+            for line in lines:
+                # 제품명이나 메타 데이터 줄 제외
+                if re.search(r'^(?:\[|\*\*\[)([^\]]+)(?:\]|\*\*)', line):
+                    continue
+                if line.startswith('- ') or line.startswith('* '):
+                    # 불렛 포인트면 기호 제거
+                    description = re.sub(r'^[-*]\s*', '', line)
+                    break
+                description = line
+                break
+            
+            if not description and lines:
+                description = lines[0] # 최후의 수단
             
             # 파일 경로 추출 (마크다운 백틱 `file_path` 찾기)
             file_match = re.search(r'`([^`]+\.(?:tsx|ts|jsx|js|html|py))`', action_text)
             target_file = file_match.group(1) if file_match else None
+
+            print(f"DEBUG: Action {idx} | Product: {product_id} | File: {target_file} | Desc: {description[:50]}...")
 
             # 예상 효과 추출
             impact_match = re.search(r'예상 효과:\s*(.+)', action_text)

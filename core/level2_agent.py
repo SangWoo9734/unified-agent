@@ -106,11 +106,6 @@ class Level2Agent:
                     "execution_results": []
                 }
 
-            # product_id 자동 감지 (첫 액션에서)
-            if not product_id:
-                product_id = actions[0].product_id
-                print(f"🏷️  Product ID 자동 감지: {product_id}\n")
-
             # 3. 액션 검증
             print("🛡️  액션 안전성 검증 중...")
             for action in actions:
@@ -147,21 +142,21 @@ class Level2Agent:
             print()
 
             # 5. PR 생성
-            pr_url = None
             if not self.dry_run:
-                print("📤 GitHub PR 생성 중...")
-                pr_url = self._create_pr(execution_results, product_id)
-
-                if pr_url:
-                    print(f"   ✅ PR 생성 완료: {pr_url}\n")
-                else:
-                    print(f"   ⚠️  PR을 생성하지 못했습니다\n")
+                print("📤 GitHub PR 생성 프로세스 시작...")
+                # 제품(product_id)별로 액션 그룹화하여 각각 PR 생성
+                # (ExecutionResult 리스트만으로는 product_id를 모르므로, 
+                #  safe_actions와 result의 인덱스가 1:1임을 이용)
+                pr_results = self._create_prs_by_product(safe_actions, execution_results)
+                
+                pr_urls = [url for url in pr_results.values() if url]
+                pr_url = pr_urls[0] if pr_urls else None
             else:
                 print("🔍 [DRY-RUN] PR 생성 건너뜀\n")
+                pr_url = None
 
             return {
                 "success": True,
-                "product_id": product_id,
                 "actions_extracted": len(actions),
                 "actions_safe": len(safe_actions),
                 "actions_executed": successful_count,
@@ -250,16 +245,18 @@ class Level2Agent:
 
             # 실행
             try:
+                # 액션별 product_id 명시적 사용
+                print(f" (Product: {action.product_id})")
                 result = executor.execute(action)
                 results.append(result)
 
                 if result.success:
-                    print("✅")
+                    print(f"   ✅ SUCCESS: {action.id}")
                 else:
-                    print(f"❌ {result.error}")
+                    print(f"   ❌ FAILED: {action.id} | {result.error}")
 
             except Exception as e:
-                print(f"❌ {e}")
+                print(f"   ❌ ERROR: {e}")
                 results.append(ExecutionResult(
                     action_id=action.id,
                     success=False,
@@ -269,6 +266,43 @@ class Level2Agent:
                 ))
 
         return results
+
+    def _create_prs_by_product(self, actions: List[Action], results: List[ExecutionResult]) -> Dict[str, str]:
+        """
+        실행 결과를 제품별로 그룹화하여 각각 PR을 생성합니다.
+        
+        Args:
+            actions: 실행된 액션 리스트 (safe_actions)
+            results: 실행 결과 리스트 (execution_results)
+        """
+        # 1. 제품별로 결과 그룹화
+        product_results = {}
+        
+        for action, result in zip(actions, results):
+            if not result.success:
+                continue
+                
+            pid = action.product_id
+            if not pid or pid == "unknown" or pid == "unified-agent":
+                print(f"⚠️  유효하지 않은 Product ID 무시: {pid} (Action: {action.id})")
+                continue
+                
+            if pid not in product_results:
+                product_results[pid] = []
+            product_results[pid].append(result)
+            
+        # 2. 각 제품별로 PR 생성
+        pr_urls = {}
+        for pid, res_list in product_results.items():
+            print(f"\n📦 [{pid}] 프로덕트에 대한 PR 생성 중...")
+            url = self._create_pr(res_list, pid)
+            if url:
+                pr_urls[pid] = url
+                print(f"   ✅ [{pid}] PR 생성 완료: {url}")
+            else:
+                print(f"   ⚠️  [{pid}] PR 생성 실패")
+                
+        return pr_urls
 
     def _create_pr(self, execution_results: List[ExecutionResult], product_id: str) -> Optional[str]:
         """
