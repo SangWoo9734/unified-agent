@@ -313,12 +313,36 @@ JSON만 출력하세요."""
             # Action 객체로 변환
             actions = []
             for idx, data in enumerate(actions_data, start=1):
+                # 1. action_type 매핑 (한국어 대항)
+                raw_type = str(data.get("action_type") or "").lower()
+                if any(kw in raw_type for kw in ["title", "타이틀", "제목"]):
+                    action_type = "update_meta_title"
+                elif any(kw in raw_type for kw in ["description", "설명"]):
+                    action_type = "update_meta_description"
+                elif any(kw in raw_type for kw in ["link", "링크"]):
+                    action_type = "add_internal_link"
+                elif any(kw in raw_type for kw in ["canonical", "캐노니컬"]):
+                    action_type = "update_canonical_url"
+                elif any(kw in raw_type for kw in ["og", "graph", "오픈그래프"]):
+                    action_type = "update_og_tags"
+                else:
+                    action_type = "update_meta_title" # 기본값
+
+                # 2. product_id 매핑
+                raw_pid = str(data.get("product_id") or "").lower()
+                if any(kw in raw_pid for kw in ["qr", "generator", "studio"]):
+                    product_id = "qr-generator"
+                elif any(kw in raw_pid for kw in ["convert", "kits", "image"]):
+                    product_id = "convert-image"
+                else:
+                    product_id = raw_pid.replace(" ", "-") or "unknown"
+
                 action = Action(
                     id=f"action-{idx}",
                     priority="high",
                     description=data.get("description", ""),
-                    product_id=data.get("product_id", ""),
-                    action_type=data.get("action_type", "update_meta_title"),
+                    product_id=product_id,
+                    action_type=action_type,
                     target_file=data.get("target_file"),
                     parameters=data.get("parameters", {}),
                     expected_impact=data.get("expected_impact"),
