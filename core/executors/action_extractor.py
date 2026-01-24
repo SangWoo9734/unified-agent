@@ -115,8 +115,10 @@ class ActionExtractor:
             text_lower = action_text.lower()
             if any(kw in text_lower for kw in ['qr studio', 'qr-studio', 'qr generator', 'qr-generator']):
                 product_id = 'qr-generator'
+                print(f"DEBUG: 키워드 매칭 성공 (qr-generator)")
             elif any(kw in text_lower for kw in ['convertkits', 'convert-image', 'convert image']):
                 product_id = 'convert-image'
+                print(f"DEBUG: 키워드 매칭 성공 (convert-image)")
             
             # 2. 키워드로 못 찾았다면 정규식 시도
             if product_id == "unknown":
