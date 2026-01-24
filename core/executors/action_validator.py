@@ -37,6 +37,11 @@ class ActionValidator:
         r".*Layout\.tsx$",
         r".*metadata\.ts$",
         r".*head\.tsx$",
+        r".*SEO\.tsx$",      # SEO 전용 컴포넌트 추가
+        r".*page\.tsx$",     # Next.js App Router 페이지 추가
+        r".*view\.tsx$",     # 명시적 뷰 컴포넌트 추가
+        r"pages/.*\.tsx$",   # Vite/기존 React-router 페이지 추가
+        r"src/app/.*\.tsx$", # Next.js App Router 전체 경로 추가
     ]
 
     # 위험 패턴 (XSS, Code Injection)

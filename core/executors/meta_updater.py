@@ -232,18 +232,30 @@ class MetaUpdater(ActionExecutor):
 
             # title 변경
             if new_title:
-                # title: "..." 또는 title: '...' 패턴 찾기
-                title_pattern = r'(title:\s*["\'])([^"\']+)(["\'])'
-                if re.search(title_pattern, modified_code):
-                    modified_code = re.sub(title_pattern, rf'\1{new_title}\3', modified_code)
+                # 1. Next.js metadata 객체: title: "..."
+                title_pattern_obj = r'(title:\s*["\'])([^"\']+)(["\'])'
+                # 2. React 컴포넌트 Props: title="..."
+                title_pattern_prop = r'(title\s*=\s*["\'])([^"\']+)(["\'])'
+                
+                if re.search(title_pattern_obj, modified_code):
+                    modified_code = re.sub(title_pattern_obj, rf'\1{new_title}\3', modified_code)
+                    changed = True
+                elif re.search(title_pattern_prop, modified_code):
+                    modified_code = re.sub(title_pattern_prop, rf'\1{new_title}\3', modified_code)
                     changed = True
 
             # description 변경
             if new_description:
-                # description: "..." 또는 description: '...' 패턴 찾기
-                desc_pattern = r'(description:\s*["\'])([^"\']+)(["\'])'
-                if re.search(desc_pattern, modified_code):
-                    modified_code = re.sub(desc_pattern, rf'\1{new_description}\3', modified_code)
+                # 1. Next.js metadata 객체: description: "..."
+                desc_pattern_obj = r'(description:\s*["\'])([^"\']+)(["\'])'
+                # 2. React 컴포넌트 Props: description="..."
+                desc_pattern_prop = r'(description\s*=\s*["\'])([^"\']+)(["\'])'
+                
+                if re.search(desc_pattern_obj, modified_code):
+                    modified_code = re.sub(desc_pattern_obj, rf'\1{new_description}\3', modified_code)
+                    changed = True
+                elif re.search(desc_pattern_prop, modified_code):
+                    modified_code = re.sub(desc_pattern_prop, rf'\1{new_description}\3', modified_code)
                     changed = True
 
             if not changed:
