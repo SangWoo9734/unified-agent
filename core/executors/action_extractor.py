@@ -269,6 +269,14 @@ class ActionExtractor:
         # Gemini에게 구조화된 JSON으로 액션 추출 요청
         prompt = f"""다음은 프로덕트 분석 리포트입니다. "High Priority" 섹션의 액션들을 JSON 배열로 추출해주세요.
 
+**중요: action_type은 반드시 아래 리스트에 정의된 영문 식별자만 사용해야 합니다 (한국어 금지).**
+정의된 action_type 리스트:
+- update_meta_title
+- update_meta_description
+- add_internal_link
+- update_canonical_url
+- update_og_tags
+
 리포트:
 ```
 {content}
@@ -278,11 +286,11 @@ class ActionExtractor:
 [
   {{
     "product_id": "qr-generator",
-    "description": "Update meta title to 'Free QR Code Generator'",
+    "description": "메타 타이틀 업데이트 내용",
     "action_type": "update_meta_title",
     "target_file": "src/app/layout.tsx",
-    "parameters": {{"new_title": "Free QR Code Generator"}},
-    "expected_impact": "Improve SEO"
+    "parameters": {{"new_title": "새로운 타이틀"}},
+    "expected_impact": "검색 노출 개선"
   }}
 ]
 
