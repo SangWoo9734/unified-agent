@@ -44,15 +44,6 @@ class ActionExtractor:
     def extract_from_report(self, report_path: str) -> List[Action]:
         """
         리포트 파일에서 액션을 추출합니다.
-
-        Args:
-            report_path: 리포트 파일 경로
-
-        Returns:
-            추출된 액션 리스트
-
-        Raises:
-            FileNotFoundError: 리포트 파일이 없을 때
         """
         report_file = Path(report_path)
 
@@ -63,14 +54,87 @@ class ActionExtractor:
         with open(report_file, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # 정규식으로 파싱 시도
+        # 1. JSON 블록 추출 시도 (가장 정확함)
+        actions = self._parse_json_block(content)
+        if actions:
+            print(f"✅ 리포트에서 JSON 액션 추출 성공 ({len(actions)}개)")
+            return actions
+
+        # 2. 정규식으로 파싱 시도 (하위 호환)
         actions = self._parse_with_regex(content)
 
-        # 파싱 실패 시 Gemini API fallback (선택사항)
+        # 3. 파싱 실패 시 Gemini API fallback
         if not actions and self.client:
             actions = self._parse_with_gemini(content)
 
         return actions
+
+    def _parse_json_block(self, content: str) -> List[Action]:
+        """리포트 내부의 JSON 코드 블록을 파싱합니다."""
+        import json
+        json_pattern = r'```json\s*(\[.*?\])\s*```'
+        match = re.search(json_pattern, content, re.DOTALL)
+        
+        if not match:
+            return []
+            
+        try:
+            print(f"📊 JSON 블록 발견, 파싱 시도 중...")
+            actions_data = json.loads(match.group(1))
+            actions = []
+            for idx, data in enumerate(actions_data, start=1):
+                product_id = data.get("product_id")
+                target_file = data.get("target_file")
+                description = data.get("description", "SEO Update")
+                
+                # parameters 및 new_value 추출
+                params = data.get("parameters", {})
+                new_value = data.get("new_value") or params.get("new_value")
+                
+                # fallback: 만약 new_title/new_description만 있고 new_value가 없으면 복사
+                if not new_value:
+                    new_value = params.get("new_title") or params.get("new_description")
+                
+                print(f"   [DEBUG] Action {idx} | Product: {product_id} | File: {target_file} | Value: {new_value}")
+
+                # 파일 경로 보정 (Vite 대응)
+                if target_file and product_id == 'convert-image':
+                    if 'src/app/page.tsx' in target_file:
+                        target_file = 'pages/Home.tsx'
+                    elif 'src/app/layout.tsx' in target_file:
+                        target_file = 'src/App.tsx'
+
+                # new_value를 parameters에 확실히 주입
+                if new_value:
+                    if "new_value" not in params:
+                        params["new_value"] = new_value
+                    if data.get("action_type") == "update_meta_title" and "new_title" not in params:
+                        params["new_title"] = new_value
+                    if data.get("action_type") == "update_meta_description" and "new_description" not in params:
+                        params["new_description"] = new_value
+
+                action = Action(
+                    id=f"action-json-{idx}",
+                    priority="high",
+                    description=description,
+                    product_id=product_id or "unknown",
+                    action_type=data.get("action_type") or "update_meta_title",
+                    target_file=target_file,
+                    parameters=params,
+                    expected_impact=data.get("expected_impact"),
+                    is_automatable=True
+                )
+                
+                # 필수 필드 체크 (중요!)
+                if action.target_file and action.parameters.get("new_value") and len(str(action.parameters.get("new_value"))) > 2:
+                    actions.append(action)
+                else:
+                    print(f"   ⚠️  Action {idx} 스킵: 필수 데이터 누락 또는 너무 짧은 값 ({new_value})")
+                    
+            return actions
+        except Exception as e:
+            print(f"⚠️  JSON 블록 파싱 에러: {e}")
+            return []
 
     def _parse_with_regex(self, content: str) -> List[Action]:
         """
@@ -86,14 +150,28 @@ class ActionExtractor:
 
         # ComparativeAnalyzer가 생성하는 "### 🔴 High Priority (긴급 - 즉시 실행)" 및 기타 변종 지원
         # (헤더 뒤의 텍스트가 줄바꿈 없이 바로 시작하는 경우도 고려)
-        high_priority_pattern = r'##+.*?(?:High Priority|최우선 과제|🔴 High Priority)[:\s]*(.*?)(?=##|\Z)'
-        match = re.search(high_priority_pattern, content, re.DOTALL | re.IGNORECASE)
-
-        if not match:
-            print(f"⚠️  High Priority 섹션을 찾지 못했습니다. (패턴: {high_priority_pattern})")
+        # 구체적인 헤더 형식을 우선 매칭하여 Summary 섹션의 텍스트와 혼동되지 않도록 함
+        # 특히 "### 🔴 High Priority"와 같은 형식을 선호
+        high_priority_head_pattern = r'(?:###|##)\s*(?:🔴\s*)?(?:High Priority|최우선 과제|긴급).*?$'
+        
+        # 먼저 리포트에서 섹션 위치 찾기
+        matches = list(re.finditer(high_priority_head_pattern, content, re.MULTILINE | re.IGNORECASE))
+        
+        if not matches:
+            print(f"⚠️  High Priority 섹션 헤더를 찾지 못했습니다.")
             return actions
 
-        high_priority_section = match.group(1)
+        # 여러 개가 매칭될 경우, 보통 리포트 하단의 실행 계획(Action Plan) 섹션에 있는 것을 선택
+        # (Summary에 있는 "이번 주 최우선 과제"와 같은 일반 텍스트와 구분하기 위함)
+        target_match = matches[-1] # 마지막 매칭 선택
+        start_pos = target_match.end()
+        
+        # 다음 섹션(##) 혹은 파일 끝까지 내용 추출
+        next_section_match = re.search(r'^##\s+', content[start_pos:], re.MULTILINE)
+        if next_section_match:
+            high_priority_section = content[start_pos : start_pos + next_section_match.start()]
+        else:
+            high_priority_section = content[start_pos:]
         print(f"DEBUG: High Priority Section Content (first 100 chars):\n{high_priority_section[:100]}...")
 
         # 각 액션 파싱
@@ -161,6 +239,31 @@ class ActionExtractor:
             file_match = re.search(r'`([^`]+\.(?:tsx|ts|jsx|js|html|py))`', action_text)
             target_file = file_match.group(1) if file_match else None
 
+            # Fallback: 백틱이 없을 경우 "File: path" 또는 "파일: path" 검색
+            if not target_file:
+                file_hint_match = re.search(r'(?:File|파일|대상\s파일):\s*([^\s\n]+\.(?:tsx|ts|jsx|js|html|py))', action_text, re.IGNORECASE)
+                if file_hint_match:
+                    target_file = file_hint_match.group(1).strip()
+            
+            # target_file이 여전히 없으면 텍스트 전체에서 파일 경로 패턴 찾기
+            if not target_file:
+                path_match = re.search(r'([^\s\n]+\.(?:tsx|ts|jsx|js|html|py))', action_text)
+                if path_match:
+                    target_file = path_match.group(1).strip()
+            
+            # target_file 청소 (마침표 등 제거)
+            if target_file:
+                target_file = target_file.strip('.,; ')
+                if target_file.lower() == "none":
+                    target_file = None
+
+            # Path Correction Heuristic (Framework Mismatch Fix)
+            if target_file and product_id == 'convert-image':
+                if 'src/app/page.tsx' in target_file:
+                    target_file = 'pages/Home.tsx'
+                elif 'src/app/layout.tsx' in target_file:
+                    target_file = 'src/App.tsx'
+
             print(f"DEBUG: Action {idx} | Product: {product_id} | File: {target_file} | Desc: {description[:50]}...")
 
             # 예상 효과 추출
@@ -219,37 +322,40 @@ class ActionExtractor:
 
     def _extract_parameters(self, description: str, full_block: str) -> dict:
         """
-        설명에서 parameters를 추출합니다.
-
-        Args:
-            description: 액션 설명
-            full_block: 전체 액션 블록
-
-        Returns:
-            parameters dict
+        설명 및 전체 블록에서 parameters를 추출합니다.
         """
         parameters = {}
+        action_type = self._infer_action_type(description)
 
-        # 1. 따옴표 안의 내용 추출 ("..." 또는 '...')
-        quote_match = re.search(r'["\']([^"\']+)["\']', description)
-        if quote_match:
-            quoted_text = quote_match.group(1)
-        else:
+        # 1. 따옴표 찾기 (가장 긴 것을 우선 선택하여 'SEO' 같은 짧은 단어 방지)
+        all_quotes = re.findall(r'["\']([^"\']+)["\']', full_block)
+        quoted_text = None
+        if all_quotes:
+            # "File:", "URL:" 등 지표성 텍스트 제외하고 가장 적절한 후보 선택
+            candidates = [q for q in all_quotes if len(q) > 2 and not q.endswith('.tsx') and not q.endswith('.ts')]
+            if candidates:
+                # 메타 타이틀/설명은 보통 가장 긴 텍스트임
+                quoted_text = max(candidates, key=len)
+
+        if not quoted_text:
             # 2. 한국어 조사 전의 내용 추출 ( ~로, ~으로 )
-            # 예: "타이틀을 Free QR Generator로 변경" -> Free QR Generator
-            ko_match = re.search(r'([a-zA-Z0-9\s가-힣]+)(?:으로|로)\s+(?:변경|업데이트|추가|교체)', description)
+            ko_match = re.search(r'([a-zA-Z0-9\s가-힣]{3,})(?:으로|로)\s+(?:변경|업데이트|추가|교체)', full_block)
             quoted_text = ko_match.group(1).strip() if ko_match else None
 
+        # 3. 데이터 정제 및 유효성 검사
         if quoted_text:
-            # action_type에 따라 파라미터 매핑
-            action_type = self._infer_action_type(description)
-            if action_type == "update_meta_title":
-                parameters["new_title"] = quoted_text
-            elif action_type == "update_meta_description":
-                parameters["new_description"] = quoted_text
-            elif action_type == "add_internal_link":
-                parameters["link_url"] = quoted_text
-                parameters["link_text"] = quoted_text
+            cleaned = quoted_text.strip('.,; ')
+            if cleaned.lower() != "none" and len(cleaned) >= 2:
+                if action_type == "update_meta_title":
+                    parameters["new_title"] = cleaned
+                    parameters["new_value"] = cleaned
+                elif action_type == "update_meta_description":
+                    parameters["new_description"] = cleaned
+                    parameters["new_value"] = cleaned
+                elif action_type == "add_internal_link":
+                    parameters["link_url"] = cleaned
+                    parameters["link_text"] = cleaned
+                    parameters["new_value"] = cleaned
 
         return parameters
 

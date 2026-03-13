@@ -1,0 +1,163 @@
+import os
+import sys
+import pandas as pd
+from datetime import datetime, timedelta
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Add current directory to path
+sys.path.insert(0, os.path.dirname(__file__))
+
+from core.analyzers.comparative_analyzer import ComparativeAnalyzer
+
+def generate_mock_data():
+    """가상 데이터 생성"""
+    products_data = []
+    
+    # 1. QR Generator Mock Data
+    qr_data = {
+        'id': 'qr-generator',
+        'name': 'QR Studio',
+        'config': {
+            'priority': 'high',
+            'has_adsense': True,
+            'analysis_days': 7,
+            'goals': {
+                'weekly_sessions': 10000,
+                'weekly_gsc_clicks': 12000,
+                'target_ctr_percent': 2.5
+            },
+            'thresholds': {
+                'avg_position': {'warning': 15, 'critical': 25},
+                'ctr_percent': {'warning': 2.0, 'critical': 1.0}
+            },
+            'health_score_weights': {
+                'traffic': 40,
+                'seo': 30,
+                'revenue': 30
+            }
+        },
+        'gsc': {
+            'top_queries': pd.DataFrame([
+                {'query': 'qr code generator', 'clicks': 8500, 'impressions': 150000, 'ctr': 0.056, 'position': 3.2},
+                {'query': 'free qr creator', 'clicks': 2100, 'impressions': 45000, 'ctr': 0.046, 'position': 5.1},
+                {'query': 'make qr code', 'clicks': 1200, 'impressions': 30000, 'ctr': 0.04, 'position': 4.8},
+            ]),
+            'opportunities': pd.DataFrame([
+                {'query': 'bulk qr generator', 'clicks': 50, 'impressions': 5000, 'ctr': 0.01, 'position': 18.2},
+            ]),
+            'page_performance': pd.DataFrame([
+                {'page': '/', 'clicks': 11000, 'impressions': 200000, 'position': 4.1}
+            ])
+        },
+        'ga4': {
+            'pages': pd.DataFrame([
+                {'page_path': '/', 'sessions': 9500, 'engagement_rate': 65.5}
+            ]),
+            'devices': pd.DataFrame([
+                {'device': 'mobile', 'sessions': 6000},
+                {'device': 'desktop', 'sessions': 3500}
+            ])
+        },
+        'adsense': {
+            'revenue': 45.20,
+            'rpm': 4.75,
+            'source': 'manual'
+        }
+    }
+    products_data.append(qr_data)
+    
+    # 2. Convert Image Mock Data
+    conv_data = {
+        'id': 'convert-image',
+        'name': 'ConvertKits',
+        'config': {
+            'priority': 'medium',
+            'has_adsense': False,
+            'analysis_days': 7,
+            'goals': {
+                'weekly_sessions': 5000,
+                'weekly_gsc_clicks': 4000
+            },
+            'thresholds': {
+                'avg_position': {'warning': 20, 'critical': 35}
+            },
+            'health_score_weights': {
+                'traffic': 60,
+                'seo': 40
+            }
+        },
+        'gsc': {
+            'top_queries': pd.DataFrame([
+                {'query': 'png to webp', 'clicks': 3200, 'impressions': 80000, 'ctr': 0.04, 'position': 12.5},
+                {'query': 'image converter', 'clicks': 500, 'impressions': 25000, 'ctr': 0.02, 'position': 25.1},
+            ]),
+            'opportunities': pd.DataFrame([
+                {'query': 'heic to jpg', 'clicks': 10, 'impressions': 2000, 'ctr': 0.005, 'position': 40.2},
+            ]),
+            'page_performance': pd.DataFrame([
+                {'page': '/', 'clicks': 3500, 'impressions': 100000, 'position': 18.5}
+            ])
+        },
+        'ga4': {
+            'pages': pd.DataFrame([
+                {'page_path': '/', 'sessions': 4200, 'engagement_rate': 42.1}
+            ]),
+            'devices': pd.DataFrame([
+                {'device': 'desktop', 'sessions': 3000},
+                {'device': 'mobile', 'sessions': 1200}
+            ])
+        },
+        'adsense': None
+    }
+    products_data.append(conv_data)
+    
+    return products_data
+
+def main():
+    load_dotenv()
+    api_key = os.getenv('GOOGLE_API_KEY')
+    
+    if not api_key:
+        print("❌ GOOGLE_API_KEY not found in .env")
+        return
+    
+    print("🚀 Mock 데이터 기반 비교 분석 시작")
+    
+    # 1. 가상 데이터 생성
+    all_data = generate_mock_data()
+    
+    # 2. 분석기 실행
+    analyzer = ComparativeAnalyzer(api_key)
+    report_content = analyzer.analyze_products(all_data)
+    
+    # 3. 리포트 저장
+    timestamp = datetime.now().strftime('%Y-%m-%d')
+    report_dir = Path("reports/comparison")
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / f"{timestamp}_mock_analysis_report.md"
+    
+    # 리포트 헤더 결합 (main.py 방식)
+    product_names = ", ".join([d['name'] for d in all_data])
+    full_report = f"""# Multi-Product Analysis Report (MOCK)
+생성일: {timestamp}
+분석 프로덕트: {product_names}
+상태: 가상 데이터를 이용한 데모 리포트
+
+---
+
+{report_content}
+
+---
+
+*Generated by Unified Multi-Product Agent (Mock Mode)*
+"""
+    
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write(full_report)
+    
+    print(f"✅ 리포트 생성 완료: {report_path}")
+    print(f"🔗 경로: {os.path.abspath(report_path)}")
+
+if __name__ == "__main__":
+    main()

@@ -60,31 +60,32 @@ class ActionValidator:
     def validate(self, action: Action) -> Tuple[bool, str]:
         """
         액션이 자동화 가능한지 검증합니다.
-
-        Args:
-            action: 검증할 액션
-
-        Returns:
-            (is_valid, reason) 튜플
-            - is_valid: 자동화 가능 여부
-            - reason: 가능/불가 이유
         """
+        # 0. 필수 필드 존재 여부 검증
+        if not action.target_file:
+            return False, "Missing target_file"
+        
         # 1. action_type 화이트리스트 검증
         if action.action_type not in self.SAFE_ACTION_TYPES:
             return False, f"Unsafe action_type: {action.action_type}"
 
-        # 2. target_file 검증
-        if action.target_file:
-            if not self._is_safe_file(action.target_file):
-                return False, f"Unsafe target_file: {action.target_file}"
+        # 2. 파라미터 존재 여부 검증 (값 수정 액션인 경우)
+        if action.action_type in ["update_meta_title", "update_meta_description"]:
+            new_val = action.parameters.get("new_value")
+            if not new_val or str(new_val).lower() == "none":
+                return False, f"Missing new_value for {action.action_type}"
 
-        # 3. parameters 안전성 검증
+        # 3. target_file 화이트리스트 검증
+        if not self._is_safe_file(action.target_file):
+            return False, f"Unsafe target_file: {action.target_file}"
+
+        # 4. parameters 안전성 검증
         for key, value in action.parameters.items():
             if isinstance(value, str):
                 if self._contains_dangerous_pattern(value):
                     return False, f"Dangerous pattern detected in {key}: {value[:50]}..."
 
-        # 4. description 검증 (추가 안전장치)
+        # 5. description 검증 (추가 안전장치)
         if self._contains_dangerous_pattern(action.description):
             return False, f"Dangerous pattern in description"
 

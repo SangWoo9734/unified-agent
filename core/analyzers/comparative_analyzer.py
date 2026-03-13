@@ -466,21 +466,26 @@ class ComparativeAnalyzer:
     def _build_analysis_prompt(self, summary: str, products_data: List[Dict], metrics_analysis: str) -> str:
         """
         Gemini에게 보낼 분석 프롬프트 생성
-
-        Args:
-            summary: 데이터 요약 문자열
-            products_data: 원본 데이터 (필요시 참조)
-            metrics_analysis: 지표 기반 자동 분석 결과
-
-        Returns:
-            분석 프롬프트
         """
         product_names = [data.get('name', 'Unknown') for data in products_data]
         product_list = ", ".join(product_names)
+        
+        # 프레임워크 정보 포함한 상세 설명 생성
+        product_contexts = []
+        for data in products_data:
+            name = data.get('name', 'Unknown')
+            id = data.get('id', 'Unknown')
+            framework = data.get('config', {}).get('framework', 'unknown')
+            
+            path_hint = "src/app/layout.tsx" if framework == "nextjs" else "pages/Home.tsx (or layouts/MainLayout.tsx)"
+            product_contexts.append(f"- {name} ({id}): Framework={framework}, Best path example={path_hint}")
+        
+        context_str = "\n".join(product_contexts)
 
         prompt = f"""
 당신은 여러 웹 프로덕트를 운영하는 마케팅 팀의 데이터 분석가이자 시니어 개발자입니다.
-현재 운영 중인 프로덕트: {product_list}
+현재 운영 중인 프로덕트와 그 환경 정보:
+{context_str}
 
 # 수집된 데이터
 {summary}
@@ -492,12 +497,16 @@ class ComparativeAnalyzer:
 위 데이터와 **지표 기반 자동 분석**을 바탕으로 **실행 가능한 비교 분석 리포트**를 작성해주세요.
 
 **중요: 개선점(Action Plan) 작성 원칙**
-1. **반드시 구체적인 코드 수정 사항을 제안**해야 합니다. 추상적인 제안(예: "SEO 강화")은 금지합니다.
-2. **반드시 수정할 파일 경로를 백틱으로 포함**하세요. (예: `src/app/layout.tsx`)
-3. **최우선 과제(🔴 High Priority)는 프로덕트별로 최소 1-2개씩 반드시 생성**하세요. 지표가 건강(🟢)하더라도 "더 공격적인 성장(Growth)"을 위한 개선점을 찾아내세요.
-4. **Action 리스트는 반드시 정규표현식으로 파서가 읽을 수 있는 아래 형식을 유지**하세요.
+1. **반드시 구체적인 코드 수정 사항을 제안**해야 합니다.
+2. **반드시 실제 프로젝트 구조(Framework)에 맞는 파일 경로를 백틱으로 포함**하세요.
+   - Next.js (qr-generator): `src/app/layout.tsx`, `src/app/page.tsx` 등 사용
+   - Vite (convert-image): `pages/Home.tsx`, `src/App.tsx`, `Header.tsx` 등 사용 (Vite 프로젝트는 src/app 구조가 아님에 주의)
+3. **최우선 과제(🔴 High Priority)는 프로덕트별로 최소 1-2개씩 반드시 생성**하세요.
+4. **Action 리스트는 반드시 아래 형식을 정확히 유지**하세요 (Regex 파서용).
 
-다음 형식을 정확히 따라주세요:
+형식 예시:
+1. **[QR Studio]** 메타 타이틀 수정 - File: `src/app/layout.tsx`
+2. **[ConvertKits]** 랜딩 페이지 참여율 개선 - File: `pages/Home.tsx`
 
 ---
 
@@ -527,21 +536,38 @@ class ComparativeAnalyzer:
 ## ✅ This Week's Action Plan (이번 주 실행 계획)
 
 ### 🔴 High Priority (긴급 - 즉시 실행)
-**반드시 아래 형식을 지켜주세요: "번호. [프로덕트명] 액션내용 - File: `파일경로`"**
+1. **[프로덕트명]** 액션내용 - File: `파일경로`
+   - 대상 지표: 지표명, 현재: [값], 목표: [값]
+   - 예상 효과: 구체적인 기대 효과
 
-1. **[{product_names[0] if len(product_names) > 0 else 'Product'}]** 메타 타이틀을 "새로운 타이틀"로 업데이트하여 CTR 개선 - File: `src/app/layout.tsx`
-   - 대상 지표: [🔴 CTR], 현재: [0.5%], 목표: [1.5%]
-   - 예상 효과: 검색 노출 클릭률 2배 증가
+---
 
-2. **[{product_names[1] if len(product_names) > 1 else 'Product'}]** 메타 설명을 "새로운 설명"으로 교체하여 이탈률 감소 - File: `components/SEO.tsx`
-   - 대상 지표: [🟡 참여율], 현재: [1%], 목표: [3%]
-   - 예상 효과: 검색 결과에서의 명확한 정보 제공으로 유입 질 개선
+## 🤖 Machine-Readable Actions (DO NOT MODIFY)
+아래는 자동화를 위한 데이터입니다. 반드시 정확한 JSON 형식을 유지하세요.
+- **new_value**: 반드시 15자 이상의 구체적이고 매력적인 SEO 문구여야 합니다. (예: "이미지 변환 도구 | 온라인에서 무료로 JPG를 PNG로")
+- "white", "btn", "click" 같이 짧거나 의미 없는 단어는 절대 금지입니다.
 
-3. ... (모든 프로덕트에 대해 최소 하나 이상의 🔴 High Priority 액션을 생성하세요)
+```json
+[
+  {{
+    "product_id": "qr-generator",
+    "action_type": "update_meta_title",
+    "target_file": "src/app/layout.tsx",
+    "parameters": {{"new_title": "QR 코드 생성기 | 쉽고 빠른 무료 온라인 서비스", "new_value": "QR 코드 생성기 | 쉽고 빠른 무료 온라인 서비스"}},
+    "description": "메인 페이지 메타 타이틀 최적화"
+  }},
+  {{
+    "product_id": "convert-image",
+    "action_type": "update_meta_title",
+    "target_file": "pages/Home.tsx",
+    "parameters": {{"new_title": "이미지 변환 도구 | JPG PNG 변환 및 압축 무료 서비스", "new_value": "이미지 변환 도구 | JPG PNG 변환 및 압축 무료 서비스"}},
+    "description": "랜딩 페이지 SEO 타이틀 강화"
+  }}
+]
+```
 
 ### 🟡 Medium Priority (중요 - 다음 주)
 1. [액션 내용] - 담당: [프로덕트]
-2. ...
 
 ### 🟢 Low Priority (건의 - 장기)
 1. [액션 내용] - 담당: [프로덕트]

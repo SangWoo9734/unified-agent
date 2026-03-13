@@ -5,6 +5,7 @@ products:
   # QR Generator 프로젝트
   qr-generator:
     name: "QR Studio"
+    framework: "nextjs"
 
     # Google Search Console 설정
     # 형식: "sc-domain:yourdomain.com" (도메인 속성)
@@ -69,6 +70,7 @@ products:
   # Convert Image 프로젝트
   convert-image:
     name: "ConvertKits"
+    framework: "vite"
 
     # Google Search Console 설정
     # 도메인 속성 형식

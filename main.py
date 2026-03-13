@@ -300,11 +300,11 @@ def main():
                         print(f"\n✅ Level 2 Agent v2.0 실행 완료!")
                         print(f"   추출된 액션: {result['actions_extracted']}개")
                         print(f"   안전한 액션: {result['actions_safe']}개")
-                        print(f"   Dispatch 전송: {result['dispatches_sent']}개 프로덕트")
+                        print(f"   Dispatch 전송: {result['dispatched_success']}개 프로덕트")
 
-                        if result.get('dispatch_results'):
+                        if result.get('dispatched'):
                             print(f"\n📡 Dispatch 결과:")
-                            for product, success in result['dispatch_results'].items():
+                            for product, success in result['dispatched'].items():
                                 status = "✅" if success else "❌"
                                 print(f"   {status} {product}")
 
