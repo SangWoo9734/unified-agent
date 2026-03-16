@@ -483,7 +483,8 @@ class ComparativeAnalyzer:
         context_str = "\n".join(product_contexts)
 
         prompt = f"""
-당신은 여러 웹 프로덕트를 운영하는 마케팅 팀의 데이터 분석가이자 시니어 개발자입니다.
+당신은 글로벌 웹 프로덕트를 운영하는 마케팅 팀의 데이터 분석가이자 시니어 개발자입니다.
+우리의 모든 프로덕트는 **전 세계 다양한 국가의 글로벌 사용자**를 주 타겟으로 합니다. (특정 영어권 국가에만 국한되지 않고 다양한 지역에서의 다국적 트래픽 유입이 매우 중요합니다.)
 현재 운영 중인 프로덕트와 그 환경 정보:
 {context_str}
 
@@ -544,7 +545,7 @@ class ComparativeAnalyzer:
 
 ## 🤖 Machine-Readable Actions (DO NOT MODIFY)
 아래는 자동화를 위한 데이터입니다. 반드시 정확한 JSON 형식을 유지하세요.
-- **new_value**: 반드시 15자 이상의 구체적이고 매력적인 SEO 문구여야 합니다. (예: "이미지 변환 도구 | 온라인에서 무료로 JPG를 PNG로")
+- **new_value**: 전 세계 여러 국가의 사용자를 고려하여 반드시 범용적이고 이해하기 쉬운 **영문(English)**으로 작성해야 하며, 15자 이상의 구체적이고 매력적인 SEO 문구여야 합니다. (예: "Image Converter | Convert JPG to PNG Online for Free")
 - "white", "btn", "click" 같이 짧거나 의미 없는 단어는 절대 금지입니다.
 
 ```json
@@ -553,14 +554,14 @@ class ComparativeAnalyzer:
     "product_id": "qr-generator",
     "action_type": "update_meta_title",
     "target_file": "src/app/layout.tsx",
-    "parameters": {{"new_title": "QR 코드 생성기 | 쉽고 빠른 무료 온라인 서비스", "new_value": "QR 코드 생성기 | 쉽고 빠른 무료 온라인 서비스"}},
+    "parameters": {{"new_title": "Free Online QR Code Generator | Fast & Easy", "new_value": "Free Online QR Code Generator | Fast & Easy"}},
     "description": "메인 페이지 메타 타이틀 최적화"
   }},
   {{
     "product_id": "convert-image",
     "action_type": "update_meta_title",
     "target_file": "pages/Home.tsx",
-    "parameters": {{"new_title": "이미지 변환 도구 | JPG PNG 변환 및 압축 무료 서비스", "new_value": "이미지 변환 도구 | JPG PNG 변환 및 압축 무료 서비스"}},
+    "parameters": {{"new_title": "Image Converter | Compress & Convert JPG PNG Free", "new_value": "Image Converter | Compress & Convert JPG PNG Free"}},
     "description": "랜딩 페이지 SEO 타이틀 강화"
   }}
 ]
@@ -576,7 +577,7 @@ class ComparativeAnalyzer:
 
 **중요 원칙:**
 1. **파일 경로(`path/to/file`)가 없는 액션은 파서가 무시합니다. 반드시 포함하세요.**
-2. 제안하는 메타 태그(Title, Description)는 실제 검색어 데이터를 기반으로 가장 효과적인 키워드를 포함해야 합니다.
+2. 제안하는 메타 태그(Title, Description)는 실제 검색어 데이터를 기반으로 가장 효과적인 키워드를 포함해야 하며, 내용(value)은 반드시 **영문**이어야 합니다.
 """
         return prompt
 

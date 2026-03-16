@@ -395,7 +395,7 @@ class ActionExtractor:
     "description": "메타 타이틀 업데이트 내용",
     "action_type": "update_meta_title",
     "target_file": "src/app/layout.tsx",
-    "parameters": {{"new_title": "새로운 타이틀"}},
+    "parameters": {{"new_title": "New English Title"}},
     "expected_impact": "검색 노출 개선"
   }}
 ]

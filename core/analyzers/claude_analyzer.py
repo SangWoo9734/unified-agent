@@ -45,7 +45,9 @@ class ClaudeAnalyzer:
             page_performance
         )
 
-        prompt = f"""당신은 SEO 전문가입니다. 아래 ConvertKits.org의 최근 7일간 Google Search Console 데이터를 분석하고, 실행 가능한 SEO 개선 제안을 해주세요.
+        prompt = f"""당신은 글로벌 웹 프로덕트의 SEO 전문가입니다. 
+우리의 프로덕트는 **전 세계 다양한 국가의 글로벌 사용자**를 타겟으로 하는 서비스입니다.
+아래 최근 7일간의 Google Search Console 데이터를 분석하고, **다양한 지역으로부터의 다국적 트래픽 유입 확대를 위한** 실행 가능한 SEO 개선 제안을 해주세요.
 
 # 데이터 요약
 {data_summary}
@@ -71,9 +73,9 @@ class ClaudeAnalyzer:
 
 ## 🎯 Action Items (실행 과제)
 우선순위별로 구체적인 실행 과제 3~5개 제시
-(예: "HEIC to JPG 페이지 메타 설명에 '무료' 키워드 추가")
+(예: "HEIC to JPG 페이지 메타 설명에 'free' 키워드 추가")
 
-각 섹션은 구체적이고 실행 가능한 조언이어야 하며, 한국어로 작성해주세요."""
+각 섹션은 구체적이고 실행 가능한 조언이어야 하며, 리포트는 한국어로 작성하되 제안하는 메타 태그/설명 등 실제 SEO 문구는 전 세계 여러 국가의 타겟을 위해 반드시 범용적인 **영문(English)**으로 작성해주세요."""
 
         try:
             print("🤖 Claude에게 데이터 분석 요청 중...")
